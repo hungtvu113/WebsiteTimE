@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Footerdemo } from "@/components/ui/footer-section";
 
 export default function SidebarDemo() {
   const links = [
@@ -40,6 +41,7 @@ export default function SidebarDemo() {
   ];
   const [open, setOpen] = useState(false);
   return (
+    <>
     <div
       className={cn(
         "rounded-md flex flex-col md:flex-row bg-gray-100 dark:bg-neutral-800 w-full flex-1 max-w-7xl mx-auto border border-neutral-200 dark:border-neutral-700 overflow-hidden",
@@ -77,6 +79,8 @@ export default function SidebarDemo() {
       </Sidebar>
       <Dashboard />
     </div>
+    <Footerdemo/>
+    </>
   );
 }
 
