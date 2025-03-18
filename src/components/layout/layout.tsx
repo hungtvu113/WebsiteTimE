@@ -51,12 +51,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </SidebarBody>
       </Sidebar>
       <div className="flex-1 overflow-auto">
-        <div className="min-h-screen flex flex-col">
-          <div className="flex-grow">
-            {children}
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-grow px-4 py-6 md:px-8 lg:px-12">
+              {children}
+            </div>
+            <Footerdemo />
           </div>
-          <Footerdemo />
-        </div>
       </div>
     </div>
   );

@@ -78,7 +78,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] backdrop-blur-sm border border-border/40 bg-background/90">
         <DialogHeader>
           <DialogTitle>{task ? 'Chỉnh sửa công việc' : 'Thêm công việc mới'}</DialogTitle>
         </DialogHeader>
@@ -93,6 +93,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tiêu đề công việc"
+              className="bg-background/80"
               required
             />
           </div>
@@ -106,7 +107,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Nhập mô tả công việc (nếu cần)"
-              className="resize-none h-20"
+              className="resize-none h-20 bg-background/80"
             />
           </div>
           
@@ -121,7 +122,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal bg-background/80",
                         !dueDate && "text-muted-foreground"
                       )}
                     >
@@ -129,7 +130,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
                       {dueDate ? format(dueDate, 'PPP', { locale: vi }) : <span>Chọn ngày</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 backdrop-blur-sm border border-border/40 bg-background/90">
                     <Calendar
                       mode="single"
                       selected={dueDate}
@@ -146,10 +147,10 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
                 Mức độ ưu tiên
               </label>
               <Select value={priority} onValueChange={(value) => setPriority(value as 'high' | 'medium' | 'low')}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder="Chọn mức độ ưu tiên" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="backdrop-blur-sm border border-border/40 bg-background/90">
                   <SelectItem value="high">Cao</SelectItem>
                   <SelectItem value="medium">Trung bình</SelectItem>
                   <SelectItem value="low">Thấp</SelectItem>
@@ -163,10 +164,10 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
               Danh mục
             </label>
             <Select value={category || 'none'} onValueChange={setCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background/80">
                 <SelectValue placeholder="Chọn danh mục" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="backdrop-blur-sm border border-border/40 bg-background/90">
                 <SelectItem value="none">Không có danh mục</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
@@ -175,7 +176,7 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
             </Select>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="mt-6">
             <Button 
               type="button" 
               variant="outline" 

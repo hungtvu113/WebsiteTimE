@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Edit, Trash2, CalendarClock, Clock, Tag, MoreHorizontal } from 'lucide-react';
+import { Edit, Trash2, CalendarClock, Tag } from 'lucide-react';
 import { TaskForm } from './task-form';
 
 interface TaskItemProps {
@@ -56,23 +56,25 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
   };
   
   const handleDelete = async () => {
-    setIsLoading(true);
-    try {
-      TaskService.deleteTask(task.id);
-      onUpdate();
-    } catch (error) {
-      console.error('Lỗi khi xóa task:', error);
-    } finally {
-      setIsLoading(false);
+    if (window.confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+      setIsLoading(true);
+      try {
+        TaskService.deleteTask(task.id);
+        onUpdate();
+      } catch (error) {
+        console.error('Lỗi khi xóa task:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
   
   return (
     <>
-      <div className={`rounded-lg border p-4 ${
+      <div className={`rounded-lg border p-4 backdrop-blur-sm transition-all duration-200 hover:shadow-md ${
         task.completed 
           ? 'bg-muted/40' 
-          : 'bg-card'
+          : 'bg-background/80'
       }`}>
         <div className="flex items-start gap-4">
           <Checkbox 
@@ -96,7 +98,7 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
                         size="icon"
                         onClick={() => setIsEditDialogOpen(true)}
                         disabled={isLoading}
-                        className="h-8 w-8 text-muted-foreground"
+                        className="h-8 w-8 text-muted-foreground hover:bg-accent/50"
                       >
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Chỉnh sửa</span>
@@ -116,7 +118,7 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
                         size="icon"
                         onClick={handleDelete}
                         disabled={isLoading}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Xóa</span>

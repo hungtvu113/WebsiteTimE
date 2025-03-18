@@ -35,8 +35,8 @@ export const TaskService = {
     const newTask: Task = {
       ...task,
       id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
     
     storage.setItem('tasks', JSON.stringify([...tasks, newTask]));
@@ -57,7 +57,7 @@ export const TaskService = {
     const updatedTask: Task = {
       ...tasks[taskIndex],
       ...updates,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
     
     tasks[taskIndex] = updatedTask;

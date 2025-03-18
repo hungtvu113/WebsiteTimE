@@ -64,7 +64,7 @@ export function TaskList() {
   };
   
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Danh sách công việc</h1>
         <Button onClick={() => setIsDialogOpen(true)} className="flex items-center gap-2">
@@ -87,13 +87,14 @@ export function TaskList() {
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center p-2 px-3 border rounded-lg bg-background/80 backdrop-blur-sm">
             <Switch
               id="show-completed"
               checked={preferences.showCompletedTasks}
               onCheckedChange={handleToggleShowCompleted}
+              className="mr-3"
             />
-            <Label htmlFor="show-completed" className="text-sm">
+            <Label htmlFor="show-completed" className="text-sm font-medium cursor-pointer">
               Hiển thị công việc đã hoàn thành
             </Label>
           </div>
@@ -102,7 +103,7 @@ export function TaskList() {
       
       {/* Danh sách công việc */}
       {filteredTasks.length === 0 ? (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm" data-v0-t="card">
+        <div className="rounded-lg border backdrop-blur-sm bg-background/70 shadow-sm" data-v0-t="card">
           <div className="flex flex-col items-center justify-center space-y-3 p-12 text-center">
             <div className="rounded-full bg-primary/10 p-3">
               <svg
@@ -137,7 +138,7 @@ export function TaskList() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {filteredTasks.map(task => (
             <TaskItem key={task.id} task={task} onUpdate={loadTasks} />
           ))}

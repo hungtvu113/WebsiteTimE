@@ -69,18 +69,6 @@
   }
 }
 
-@keyframes aurora {
-  0% {
-    background-position: 50% 50%, 50% 50%;
-  }
-  50% {
-    background-position: 0% 100%, 100% 0%;
-  }
-  100% {
-    background-position: 50% 50%, 50% 50%;
-  }
-}
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -126,11 +114,5 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-}
-
-@layer utilities {
-  .animate-aurora {
-    animation: aurora 10s ease infinite;
   }
 }
