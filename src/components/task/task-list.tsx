@@ -10,7 +10,6 @@ import { TaskService } from '@/lib/services/task-service';
 import { PreferenceService } from '@/lib/services/preference-service';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { TeamInvitation } from '@/components/ui/team-invitation';
 import { PlusCircle, Search, Filter } from 'lucide-react';
 
 export function TaskList() {
