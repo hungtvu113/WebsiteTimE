@@ -64,5 +64,3 @@ export function TeamInvitation() {
         </div>
     );
 }
-
-export { TeamInvitation }
