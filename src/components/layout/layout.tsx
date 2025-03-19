@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { Home, List, Calendar } from "lucide-react";
+import { Home, List, Calendar, BarChart2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -20,6 +20,11 @@ const links = [
     label: "Công việc",
     href: "/tasks",
     icon: <List className="h-5 w-5" />,
+  },
+  {
+    label: "Thống kê",
+    href: "/stats",
+    icon: <BarChart2 className="h-5 w-5" />,
   },
   {
     label: "Lịch",
