@@ -30,7 +30,7 @@ export function TaskSelector({ value, onChange }: TaskSelectorProps) {
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Chọn công việc (nếu có)" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="backdrop-blur-sm border border-border/40 bg-background/90">
         <SelectItem value="none">Không liên kết với công việc</SelectItem>
         {tasks.map(task => (
           <SelectItem key={task.id} value={task.id}>

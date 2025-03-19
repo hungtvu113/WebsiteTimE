@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Facebook, Github, Send } from "lucide-react"
+import { Github, Send } from "lucide-react"
 
 function Footerdemo() {
   return (
@@ -59,9 +59,8 @@ function Footerdemo() {
           <div>
             <h3 className="mb-4 text-lg font-semibold">Liên hệ</h3>
             <address className="space-y-2 text-sm not-italic">
-              <p>Đại học Công nghệ</p>
-              <p>Đại học Quốc gia Hà Nội</p>
-              <p>Email: contact@qltime.com</p>
+              <p>Email: tranhunggit@gmail.com</p>
+              <p>SĐT: 0375663427</p>
             </address>
           </div>
           <div className="relative">
@@ -70,22 +69,16 @@ function Footerdemo() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="rounded-full">
-                      <Facebook className="h-4 w-4" />
-                      <span className="sr-only">Facebook</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Theo dõi trên Facebook</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="rounded-full">
-                      <Github className="h-4 w-4" />
-                      <span className="sr-only">Github</span>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full"
+                      asChild
+                    >
+                      <a href="https://github.com/hungtvu113/WebsiteTimE" target="_blank" rel="noopener noreferrer">
+                        <Github className="h-4 w-4" />
+                        <span className="sr-only">Github</span>
+                      </a>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>

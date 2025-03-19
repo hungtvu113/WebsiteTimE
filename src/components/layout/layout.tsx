@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ClearDataButton } from "@/components/clear-data-button";
 import { Footerdemo } from "@/components/ui/footer-section";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const links = [
   {
@@ -63,6 +64,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 const Logo = () => {
+  const { open, animate } = useSidebar();
+
   return (
     <Link
       href="/"
@@ -71,7 +74,12 @@ const Logo = () => {
       <div className="h-5 w-6 bg-primary rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
       <motion.span
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ 
+          opacity: 1,
+          marginLeft: animate ? (open ? "8px" : "40px") : "8px",
+          display: animate ? "inline-block" : "inline-block"
+        }}
+        transition={{ duration: 0.3 }}
         className="font-medium whitespace-pre text-xl"
       >
         QLTime
