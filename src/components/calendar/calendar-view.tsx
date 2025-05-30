@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TimeBlockList } from '@/components/timeblock/time-block-list';
 import { Button } from '@/components/ui/button';
 import { BentoGrid, BentoCard } from '@/components/ui/bento-grid';
@@ -13,16 +13,41 @@ import {
   eachDayOfInterval,
   isToday,
   isSameDay,
+  parseISO,
+  isWithinInterval,
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { PreferenceService } from '@/lib/services/preference-service';
-import { CalendarDays, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { TaskService } from '@/lib/services/task-service';
+import { Task } from '@/lib/types';
+import { CalendarDays, ChevronLeft, ChevronRight, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
-export function CalendarView() {
+interface CalendarViewProps {
+  tasks?: Task[];
+  setTasks?: (tasks: Task[]) => void;
+}
+
+export function CalendarView({ tasks: propTasks, setTasks: propSetTasks }: CalendarViewProps = {}) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'day' | 'week'>('day');
+  const [internalTasks, setInternalTasks] = useState<Task[]>([]);
+  const tasks = propTasks ?? internalTasks;
+  const setTasks = propSetTasks ?? setInternalTasks;
   const preferences = PreferenceService.getPreferences();
+  
+  useEffect(() => {
+    const loadTasks = () => {
+      const tasks = TaskService.getTasks();
+      setTasks(tasks);
+    };
+    
+    loadTasks();
+    // Cập nhật dữ liệu khi có thay đổi
+    const intervalId = setInterval(loadTasks, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
   
   // Xác định ngày bắt đầu tuần dựa vào tùy chọn người dùng
   const getStartOfWeek = (date: Date) => {
@@ -47,6 +72,35 @@ export function CalendarView() {
   
   const handleToday = () => {
     setSelectedDate(new Date());
+  };
+  
+  // Lấy danh sách công việc cho một ngày cụ thể
+  const getTasksForDate = (date: Date) => {
+    return tasks.filter(task => {
+      if (!task.dueDate) return false;
+      const dueDate = new Date(task.dueDate);
+      return isSameDay(dueDate, date);
+    });
+  };
+  
+  // Lấy nhãn cho mức độ ưu tiên
+  const getPriorityLabel = (priority: 'low' | 'medium' | 'high') => {
+    switch (priority) {
+      case 'low': return 'Thấp';
+      case 'medium': return 'Trung bình';
+      case 'high': return 'Cao';
+      default: return 'Không xác định';
+    }
+  };
+  
+  // Lấy biến thể màu sắc cho badge dựa vào mức độ ưu tiên
+  const getPriorityVariant = (priority: 'low' | 'medium' | 'high'): 'success' | 'warning' | 'destructive' | 'default' => {
+    switch (priority) {
+      case 'low': return 'success';
+      case 'medium': return 'warning';
+      case 'high': return 'destructive';
+      default: return 'default';
+    }
   };
   
   const weekStart = getStartOfWeek(selectedDate);
@@ -135,6 +189,46 @@ export function CalendarView() {
         </div>
       </div>
       
+      {/* Hiển thị công việc đến hạn cho ngày được chọn */}
+      {view === 'day' && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Công việc đến hạn</h3>
+          <div className="space-y-2">
+            {getTasksForDate(selectedDate).length > 0 ? (
+              getTasksForDate(selectedDate).map(task => (
+                <div 
+                  key={task.id} 
+                  className={`p-3 rounded-lg border ${task.completed ? 'bg-muted/30' : 'bg-card'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {task.completed ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-orange-500" />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{task.title}</h4>
+                        <Badge variant={getPriorityVariant(task.priority)}>
+                          {getPriorityLabel(task.priority)}
+                        </Badge>
+                      </div>
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                Không có công việc nào đến hạn vào ngày này
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       {view === 'day' ? (
         <TimeBlockList date={selectedDate} />
       ) : (
@@ -157,8 +251,15 @@ export function CalendarView() {
                 <div className="text-sm text-muted-foreground">
                   {format(day, 'EEEE', { locale: vi })}
                 </div>
-                <div className={`text-lg font-semibold ${isToday(day) ? 'text-primary' : ''}`}>
-                  {format(day, 'dd/MM', { locale: vi })}
+                <div className="flex items-center justify-center gap-1">
+                  <div className={`text-lg font-semibold ${isToday(day) ? 'text-primary' : ''}`}>
+                    {format(day, 'dd/MM', { locale: vi })}
+                  </div>
+                  {getTasksForDate(day).length > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium rounded-full bg-primary text-primary-foreground">
+                      {getTasksForDate(day).length}
+                    </span>
+                  )}
                 </div>
               </div>
               

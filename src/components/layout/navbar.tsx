@@ -11,7 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Moon, Sun, Calendar, Home, List, Settings, Trash2 } from 'lucide-react';
+import { Moon, Sun, Calendar, Home, List, Settings, Trash2, BarChart2 } from 'lucide-react';
 import { Sidebar, SidebarProvider, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 
 export function Navbar() {
@@ -56,6 +56,8 @@ export function Navbar() {
     { href: '/', label: 'Trang chủ', icon: <Home className="h-5 w-5" /> },
     { href: '/tasks', label: 'Công việc', icon: <List className="h-5 w-5" /> },
     { href: '/calendar', label: 'Lịch', icon: <Calendar className="h-5 w-5" /> },
+    { href: '/statistics', label: 'Thống kê', icon: <BarChart2 className="h-5 w-5" /> },
+    { href: '/projects', label: 'Dự án', icon: <List className="h-5 w-5" /> },
   ];
   
   return (

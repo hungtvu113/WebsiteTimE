@@ -5,6 +5,8 @@ export interface User {
   avatar?: string;
 }
 
+export type ScrumTaskStatus = 'backlog' | 'todo' | 'doing' | 'done';
+
 export interface Task {
   id: string;
   title: string;
@@ -14,8 +16,17 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   category?: string;
   tags?: string[];
+  status?: ScrumTaskStatus; // Thêm trạng thái scrum
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Category {

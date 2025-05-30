@@ -21,22 +21,24 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Lightbulb, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { AIService } from '@/lib/services/ai-service';
 
 interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: () => void;
+  onAdded?: (task?: Task) => void;
   task?: Task;
 }
 
-export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
+export function TaskForm({ isOpen, onClose, onAdded, task }: TaskFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate ? new Date(task.dueDate) : undefined);
@@ -61,18 +63,47 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
         updatedAt: new Date().toISOString(),
       };
       
+      let updatedTask: Task;
+      
       if (task) {
-        TaskService.updateTask(task.id, taskData);
+        updatedTask = TaskService.updateTask(task.id, taskData);
       } else {
-        TaskService.createTask(taskData);
+        updatedTask = TaskService.createTask(taskData);
       }
       
-      onUpdate();
+      if (onAdded) onAdded(updatedTask);
       onClose();
     } catch (error) {
       console.error('Lỗi khi lưu task:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Thêm hàm xử lý gợi ý từ AI
+  const handleAiSuggestions = async () => {
+    if (!title) {
+      alert("Vui lòng nhập tiêu đề công việc trước");
+      return;
+    }
+    
+    setIsAiLoading(true);
+    try {
+      // Gợi ý độ ưu tiên
+      const suggestedPriority = await AIService.suggestPriority(title, description);
+      setPriority(suggestedPriority);
+      
+      // Gợi ý ngày hoàn thành nếu chưa chọn
+      if (!dueDate) {
+        const suggestedDate = await AIService.suggestDueDate(title, description);
+        if (suggestedDate) {
+          setDueDate(new Date(suggestedDate));
+        }
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+    } finally {
+      setIsAiLoading(false);
     }
   };
   
@@ -174,6 +205,20 @@ export function TaskForm({ isOpen, onClose, onUpdate, task }: TaskFormProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="flex justify-end mb-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAiSuggestions}
+              disabled={isAiLoading || !title.trim()}
+              className="gap-1"
+            >
+              {isAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lightbulb className="h-3 w-3" />}
+              Gợi ý từ AI
+            </Button>
           </div>
           
           <DialogFooter className="mt-6">

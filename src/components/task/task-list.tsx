@@ -12,12 +12,28 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Search, Filter } from 'lucide-react';
 
-export function TaskList() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+interface TaskListProps {
+  tasks?: Task[];
+  setTasks?: (tasks: Task[]) => void;
+}
+
+export function TaskList({ tasks: propTasks, setTasks: propSetTasks }: TaskListProps = {}) {
+  const [internalTasks, setInternalTasks] = useState<Task[]>([]);
+  const tasks = propTasks ?? internalTasks;
+  const setTasks = propSetTasks ?? setInternalTasks;
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [preferences, setPreferences] = useState(PreferenceService.getPreferences());
+  const [preferences, setPreferences] = useState({ showCompletedTasks: true });
+
+  // Chỉ lấy localStorage và getPreferences trong useEffect để tránh hydration lỗi
+  useEffect(() => {
+    if (!propTasks) {
+      const stored = localStorage.getItem('tasks');
+      setInternalTasks(stored ? JSON.parse(stored) : []);
+    }
+    setPreferences(PreferenceService.getPreferences());
+  }, []);
   
   useEffect(() => {
     loadTasks();
@@ -28,7 +44,8 @@ export function TaskList() {
   }, [tasks, searchTerm, preferences.showCompletedTasks]);
   
   const loadTasks = () => {
-    const tasks = TaskService.getTasks();
+    const stored = localStorage.getItem('tasks');
+    const tasks = stored ? JSON.parse(stored) : [];
     setTasks(tasks);
   };
   
@@ -139,7 +156,12 @@ export function TaskList() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {filteredTasks.map(task => (
-            <TaskItem key={task.id} task={task} onUpdate={loadTasks} />
+            <TaskItem key={task.id} task={task} onDelete={(id: string) => {
+              // Xóa task khỏi state và localStorage
+              const newTasks = tasks.filter(t => t.id !== id);
+              setTasks(newTasks);
+              localStorage.setItem('tasks', JSON.stringify(newTasks));
+            }} />
           ))}
         </div>
       )}
@@ -147,7 +169,9 @@ export function TaskList() {
       <TaskForm
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        onUpdate={loadTasks}
+        onAdded={() => {
+          loadTasks();
+        }}
       />
     </div>
   );

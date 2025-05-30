@@ -16,13 +16,16 @@ import {
 } from '@/components/ui/tooltip';
 import { Edit, Trash2, CalendarClock, Tag } from 'lucide-react';
 import { TaskForm } from './task-form';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 
 interface TaskItemProps {
   task: Task;
-  onUpdate: () => void;
+  onDelete: (id: string) => void;
 }
 
-export function TaskItem({ task, onUpdate }: TaskItemProps) {
+export function TaskItem({ task: initialTask, onDelete }: TaskItemProps) {
+  // Thêm state để theo dõi trạng thái của task bên trong component
+  const [task, setTask] = useState<Task>(initialTask);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
@@ -46,8 +49,11 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
   const handleToggleComplete = async () => {
     setIsLoading(true);
     try {
-      TaskService.toggleTaskCompletion(task.id);
-      onUpdate();
+      // Cập nhật trạng thái trong localStorage
+      const updatedTask = TaskService.toggleTaskCompletion(task.id);
+      
+      // Cập nhật trạng thái local để UI cập nhật ngay lập tức
+      setTask(updatedTask);
     } catch (error) {
       console.error('Lỗi khi cập nhật task:', error);
     } finally {
@@ -55,18 +61,24 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
     }
   };
   
+  const [showConfirm, setShowConfirm] = useState(false);
   const handleDelete = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
-      setIsLoading(true);
-      try {
-        TaskService.deleteTask(task.id);
-        onUpdate();
-      } catch (error) {
-        console.error('Lỗi khi xóa task:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    setIsLoading(true);
+    try {
+      // Gọi callback để cha cập nhật state (và localStorage)
+      onDelete(task.id);
+    } catch (error) {
+      console.error('Lỗi khi xóa task:', error);
+    } finally {
+      setIsLoading(false);
+      setShowConfirm(false);
     }
+  };
+
+  // Cập nhật task từ form edit
+  const handleTaskUpdated = (updatedTask: Task) => {
+    setTask(updatedTask);
+    setIsEditDialogOpen(false);
   };
   
   return (
@@ -114,9 +126,9 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost" 
+                        variant="ghost"
                         size="icon"
-                        onClick={handleDelete}
+                        onClick={() => setShowConfirm(true)}
                         disabled={isLoading}
                         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
@@ -129,6 +141,17 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Bạn có chắc chắn muốn xóa công việc này?</DialogTitle>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="ghost" onClick={() => setShowConfirm(false)}>Hủy</Button>
+                      <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>Xóa</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             
@@ -171,8 +194,8 @@ export function TaskItem({ task, onUpdate }: TaskItemProps) {
       <TaskForm
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
-        onUpdate={onUpdate}
         task={task}
+        onAdded={handleTaskUpdated}
       />
     </>
   );
