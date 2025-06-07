@@ -1,5 +1,6 @@
 import React from "react";
 import { Project } from "@/lib/types";
+import { safeLocalStorageGet } from "@/lib/utils/json-utils";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 
 interface ProjectListProps {
@@ -11,12 +12,12 @@ interface ProjectListProps {
 export default function ProjectList({ selectedProject, setSelectedProject, onAdded }: ProjectListProps) {
   const [projects, setProjects] = React.useState<Project[]>([]);
   React.useEffect(() => {
-    const stored = localStorage.getItem('projects_scrum');
-    setProjects(stored ? JSON.parse(stored) : []);
+    const stored = safeLocalStorageGet<Project[]>('projects_scrum');
+    setProjects(stored || []);
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'projects_scrum') {
-        const stored = localStorage.getItem('projects_scrum');
-        setProjects(stored ? JSON.parse(stored) : []);
+        const stored = safeLocalStorageGet<Project[]>('projects_scrum');
+        setProjects(stored || []);
       }
     };
     window.addEventListener('storage', handleStorage);

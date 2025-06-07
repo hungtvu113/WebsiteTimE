@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ScrumTaskStatus = 'backlog' | 'todo' | 'doing' | 'done';
@@ -78,9 +80,10 @@ export interface Note {
 
 export interface UserPreferences {
   theme: 'light' | 'dark' | 'system';
-  language: 'vi' | 'en';
   startOfWeek: 'monday' | 'sunday';
   showCompletedTasks: boolean;
   notifications: boolean;
   soundEnabled: boolean;
+  autoLogout?: boolean;
+  saveLocalData?: boolean;
 }

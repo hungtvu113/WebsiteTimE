@@ -30,10 +30,19 @@ export const TaskService = {
       // Kiểm tra trong cache trước
       const cachedTask = tasksCache.find(task => task.id === id);
       if (cachedTask) return cachedTask;
-      
+
       // Nếu không có trong cache, gọi API
-      return await ApiService.tasks.getById(id);
-    } catch (error) {
+      const task = await ApiService.tasks.getById(id);
+
+      // API trả về null cho 404, không throw error
+      if (task === null) {
+        console.debug(`Task với ID ${id} không tồn tại (đã bị xóa hoặc không hợp lệ)`);
+        return undefined;
+      }
+
+      return task;
+    } catch (error: any) {
+      // Chỉ log lỗi cho các lỗi khác (không phải 404)
       console.error(`Lỗi khi lấy công việc với id ${id}:`, error);
       return undefined;
     }

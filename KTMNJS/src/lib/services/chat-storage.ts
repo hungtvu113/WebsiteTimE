@@ -33,7 +33,7 @@ export class ChatStorageService {
   static loadChatHistory(): ChatMessage[] {
     try {
       const saved = localStorage.getItem(CHAT_HISTORY_KEY);
-      if (saved) {
+      if (saved && saved !== 'undefined' && saved !== 'null') {
         const parsed = JSON.parse(saved);
         // Convert timestamp strings back to Date objects
         return parsed.map((msg: any) => ({
@@ -43,6 +43,8 @@ export class ChatStorageService {
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
+      // Clear invalid data
+      localStorage.removeItem(CHAT_HISTORY_KEY);
     }
     return [];
   }

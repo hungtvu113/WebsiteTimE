@@ -14,7 +14,57 @@ const handleResponse = async (response: Response) => {
   const contentType = response.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
     const text = await response.text();
-    return text ? JSON.parse(text) : null;
+    if (text && text !== 'undefined' && text !== 'null' && text.trim() !== '') {
+      try {
+        return JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Text:', text);
+        throw new Error('Phản hồi từ server không hợp lệ');
+      }
+    }
+    return null;
+  }
+
+  // Nếu không có content-type JSON, trả về null cho DELETE requests
+  return null;
+};
+
+// Hàm wrapper để xử lý lỗi kết nối
+const handleFetchError = async (fetchPromise: Promise<Response>) => {
+  try {
+    return await fetchPromise;
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc đảm bảo server đang chạy.');
+    }
+    throw error;
+  }
+};
+
+// Hàm xử lý response đặc biệt cho getById - không throw error cho 404
+const handleResponseForGetById = async (response: Response) => {
+  if (!response.ok) {
+    if (response.status === 404) {
+      // Trả về null thay vì throw error cho 404
+      return null;
+    }
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Lỗi ${response.status}: ${response.statusText}`);
+  }
+
+  // Kiểm tra nếu response có content
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    if (text && text !== 'undefined' && text !== 'null' && text.trim() !== '') {
+      try {
+        return JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Text:', text);
+        throw new Error('Phản hồi từ server không hợp lệ');
+      }
+    }
+    return null;
   }
 
   // Nếu không có content-type JSON, trả về null cho DELETE requests
@@ -59,11 +109,11 @@ export const ApiService = {
   // AUTH ENDPOINTS
   auth: {
     login: async (email: string, password: string) => {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ email, password }),
-      });
+      }));
       const data = await handleResponse(response);
       if (data.token) {
         localStorage.setItem('authToken', data.token);
@@ -85,9 +135,9 @@ export const ApiService = {
     },
 
     getCurrentUser: async () => {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/auth/me`, {
         headers: getHeaders(),
-      });
+      }));
       return handleResponse(response);
     },
   },
@@ -106,11 +156,11 @@ export const ApiService = {
       }));
     },
 
-    getById: async (id: string): Promise<Task> => {
+    getById: async (id: string): Promise<Task | null> => {
       const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
         headers: getHeaders(),
       });
-      return handleResponse(response);
+      return handleResponseForGetById(response);
     },
 
     create: async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> => {
@@ -450,6 +500,25 @@ export const ApiService = {
       const url = `${API_BASE_URL}/statistics/productivity${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await fetch(url, {
         headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+  },
+
+  // USER ENDPOINTS
+  users: {
+    getProfile: async () => {
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+
+    updateProfile: async (updates: { name?: string; email?: string; avatar?: string }) => {
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updates),
       });
       return handleResponse(response);
     },
