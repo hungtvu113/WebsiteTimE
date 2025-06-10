@@ -259,6 +259,7 @@ Dự án này được phân phối dưới MIT License. Xem file `LICENSE` đ�
 ## 👨‍💻 Tác giả
 
 - **hungtvu113** - *Initial work* - [GitHub](https://github.com/hungtvu113)
+- **Các thành viên trong nhóm (chưa thêm vào)** 
 
 ## 🙏 Acknowledgments
 
