@@ -16,7 +16,7 @@ export const cleanupInvalidTimeBlocks = async () => {
     
     if (timeBlocksWithTasks.length === 0) {
       console.log('CleanupUtils: Không có TimeBlock nào có taskId để kiểm tra');
-      return;
+      return 0;
     }
     
     console.log(`CleanupUtils: Kiểm tra ${timeBlocksWithTasks.length} TimeBlocks có taskId...`);
@@ -31,11 +31,12 @@ export const cleanupInvalidTimeBlocks = async () => {
         // Nếu task không tồn tại, xóa taskId khỏi timeBlock
         if (!task) {
           console.log(`CleanupUtils: Dọn dẹp TimeBlock "${timeBlock.title}" - task ID không hợp lệ: ${timeBlock.taskId}`);
-          
-          await TimeBlockService.updateTimeBlock(timeBlock.id, {
+
+          await TimeBlockService.updateTimeBlock({
+            ...timeBlock,
             taskId: null
           });
-          
+
           cleanedCount++;
         }
       } catch (error) {

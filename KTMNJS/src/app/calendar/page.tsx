@@ -71,7 +71,7 @@ export default function CalendarPage() {
 
       const cleanedCount = await cleanupInvalidTimeBlocks();
 
-      if (cleanedCount > 0) {
+      if (cleanedCount && cleanedCount > 0) {
         // Reload data sau khi cleanup
         await loadCalendarData();
         setSuccessMessage(`Đã dọn dẹp ${cleanedCount} khối thời gian có liên kết không hợp lệ`);

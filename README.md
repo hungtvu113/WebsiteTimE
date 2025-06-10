@@ -60,8 +60,44 @@
 
 ## 🚀 Cài đặt và Chạy Dự án
 
-### Yêu cầu hệ thống
-- Node.js 18+ 
+### 🐳 Chạy với Docker (Khuyến nghị)
+
+**Yêu cầu:**
+- Docker 20.10+
+- Docker Compose 2.0+
+
+**Cách chạy nhanh:**
+```bash
+# Clone repository
+git clone https://github.com/hungtvu113/WebsiteTimE.git
+cd WebsiteTimE
+
+# Thiết lập environment
+cp .env.example .env
+# Chỉnh sửa .env và điền GEMINI_API_KEY
+
+# Khởi động tất cả services
+docker-compose up -d
+
+# Hoặc sử dụng script tiện ích
+chmod +x docker-scripts.sh
+./docker-scripts.sh setup
+./docker-scripts.sh start
+```
+
+**Truy cập:**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+- API Docs: http://localhost:3001/api/docs
+
+📖 **Xem hướng dẫn chi tiết:** [README-DOCKER.md](README-DOCKER.md)
+
+---
+
+### 💻 Chạy Local Development
+
+**Yêu cầu hệ thống:**
+- Node.js 18+
 - MongoDB 6+
 - npm hoặc yarn
 

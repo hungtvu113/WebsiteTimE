@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: qltime-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: qltime
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - qltime-dev-network
+
+  # Backend API (NestJS) - Development mode
+  backend:
+    build:
+      context: ./qltimebe
+      dockerfile: Dockerfile.dev
+    container_name: qltime-backend-dev
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/qltime?authSource=admin
+      - JWT_SECRET=dev_jwt_secret_key
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    networks:
+      - qltime-dev-network
+    volumes:
+      - ./qltimebe:/app
+      - /app/node_modules
+      - ./qltimebe/uploads:/app/uploads
+
+  # Frontend (Next.js) - Development mode
+  frontend:
+    build:
+      context: ./KTMNJS
+      dockerfile: Dockerfile.dev
+    container_name: qltime-frontend-dev
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - qltime-dev-network
+    volumes:
+      - ./KTMNJS:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+
+networks:
+  qltime-dev-network:
+    driver: bridge

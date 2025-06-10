@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 import { ApiService } from '@/lib/services/api-service';
+import { PreferenceService } from '@/lib/services/preference-service';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -19,10 +21,9 @@ import { UserMenu } from './user-menu';
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
-  
 
-  
   useEffect(() => {
     // Áp dụng theme khi component được mount
     if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {

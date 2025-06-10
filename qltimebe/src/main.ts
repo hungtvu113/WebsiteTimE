@@ -18,7 +18,12 @@ async function bootstrap() {
 
     // Cấu hình CORS
     app.enableCors({
-      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Cho phép frontend từ port 3000
+      origin: [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://frontend:3000', // Cho phép từ Docker container
+        process.env.FRONTEND_URL || 'http://localhost:3000'
+      ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       credentials: true,

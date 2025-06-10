@@ -94,8 +94,9 @@ export default function SettingsPage() {
   };
 
   const getPreferenceLabel = (key: keyof UserPreferences): string => {
-    const labels = {
+    const labels: Record<keyof UserPreferences, string> = {
       theme: 'chủ đề',
+      language: 'ngôn ngữ',
       startOfWeek: 'ngày bắt đầu tuần',
       showCompletedTasks: 'hiển thị công việc đã hoàn thành',
       notifications: 'thông báo',

@@ -80,6 +80,7 @@ export interface Note {
 
 export interface UserPreferences {
   theme: 'light' | 'dark' | 'system';
+  language: 'vi' | 'en';
   startOfWeek: 'monday' | 'sunday';
   showCompletedTasks: boolean;
   notifications: boolean;
