@@ -67,15 +67,19 @@ export const TimeBlockService = {
     }
   },
   
-  createTimeBlock: async (timeBlock: TimeBlock): Promise<TimeBlock> => {
+  createTimeBlock: async (timeBlock: Omit<TimeBlock, 'id'>): Promise<TimeBlock> => {
     try {
-      const newTimeBlock = await ApiService.timeBlocks.create(timeBlock);
-      
+      // Loại bỏ id nếu có (để đảm bảo không gửi id trong request tạo mới)
+      const { id, ...timeBlockData } = timeBlock as any;
+
+      console.log('TimeBlockService: Tạo time block với data:', timeBlockData);
+      const newTimeBlock = await ApiService.timeBlocks.create(timeBlockData);
+
       // Cập nhật cache nếu có
       if (timeBlocksCache) {
         timeBlocksCache.push(newTimeBlock);
       }
-      
+
       return newTimeBlock;
     } catch (error) {
       console.error('Lỗi khi tạo khối thời gian mới:', error);

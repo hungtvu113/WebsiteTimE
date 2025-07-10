@@ -127,26 +127,29 @@ export default function ScrumBoard({ project, tasks, setTasks, onTaskUpdate }: S
   async function moveTask(id: string, status: ScrumTaskStatus) {
     try {
       setLoading(true);
-      console.log('ScrumBoard: Đang di chuyển task...', id, status);
+      console.log('ScrumBoard: Đang di chuyển task...', id, 'to status:', status);
 
       const task = tasks.find(t => t.id === id);
-      if (!task) return;
+      if (!task) {
+        console.error('ScrumBoard: Không tìm thấy task với id:', id);
+        return;
+      }
 
+      console.log('ScrumBoard: Task hiện tại:', task);
+
+      // Gửi cả status và completed đến backend
       const updatedTask = await TaskService.updateTask(id, {
+        status: status,
         completed: status === 'done',
       });
 
-      // Update local state với status mới
-      const newTask = {
-        ...updatedTask,
-        status,
-        updatedAt: new Date().toISOString()
-      };
+      console.log('ScrumBoard: Task đã được cập nhật từ backend:', updatedTask);
 
-      console.log('ScrumBoard: Đã di chuyển task:', newTask);
-      setTasks(tasks.map(t => t.id === id ? newTask : t));
+      // Cập nhật local state với task từ backend
+      setTasks(tasks.map(t => t.id === id ? updatedTask : t));
 
       if (onTaskUpdate) {
+        console.log('ScrumBoard: Gọi onTaskUpdate để refresh data');
         onTaskUpdate();
       }
     } catch (error) {

@@ -32,25 +32,46 @@ export function TaskItem({ task: initialTask, onDelete }: TaskItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [categoryLoading, setCategoryLoading] = useState(false);
-  
+
+  // Debug: Log task data khi component mount
+  useEffect(() => {
+    console.log(`TaskItem: Task data for "${task.title}":`, {
+      id: task.id,
+      title: task.title,
+      category: task.category,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      status: task.status
+    });
+  }, [task.id]);
+
   // Tải thông tin danh mục nếu task có category
   useEffect(() => {
     const loadCategory = async () => {
-      if (!task.category) return;
+      console.log(`TaskItem: useEffect triggered for task "${task.title}" with category: ${task.category}`);
 
+      if (!task.category) {
+        console.log(`TaskItem: Task "${task.title}" không có category`);
+        setCategory(undefined);
+        return;
+      }
+
+      console.log(`TaskItem: Đang tải danh mục với ID: ${task.category} cho task "${task.title}"`);
       setCategoryLoading(true);
       try {
         const categoryData = await CategoryService.getCategory(task.category);
+        console.log(`TaskItem: Đã tải danh mục cho task "${task.title}":`, categoryData);
         setCategory(categoryData);
       } catch (error) {
-        console.error('Lỗi khi tải thông tin danh mục:', error);
+        console.error(`TaskItem: Lỗi khi tải thông tin danh mục với ID ${task.category} cho task "${task.title}":`, error);
+        setCategory(undefined);
       } finally {
         setCategoryLoading(false);
       }
     };
 
     loadCategory();
-  }, [task.category]);
+  }, [task.category, task.title]);
   
   const priorityColors = {
     high: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-900/30',

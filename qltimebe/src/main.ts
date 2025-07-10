@@ -12,8 +12,12 @@ async function bootstrap() {
   );
 
   // Cấu hình CORS
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com'] // Thay thế bằng domain frontend thực tế
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Cho phép frontend từ port 3000
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -40,7 +44,10 @@ async function bootstrap() {
 
   // Khởi động server
   const port = process.env.PORT || 3001;
-  await app.listen(port, '0.0.0.0');
-  console.log(`Ứng dụng đang chạy tại: ${await app.getUrl()}`);
+  const host = '0.0.0.0';
+
+  await app.listen(port, host);
+  console.log(`Ứng dụng đang chạy tại: http://${host}:${port}`);
+  console.log(`Swagger API docs: http://${host}:${port}/api/docs`);
 }
 bootstrap();

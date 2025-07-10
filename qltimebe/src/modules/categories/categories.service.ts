@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Category } from './schemas/category.schema';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -27,6 +27,11 @@ export class CategoriesService {
   }
 
   async findById(id: string, userId: string): Promise<Category> {
+    // Kiểm tra ID có hợp lệ không
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`ID danh mục không hợp lệ: ${id}`);
+    }
+
     const category = await this.categoryModel.findById(id).exec();
 
     if (!category) {
@@ -42,6 +47,11 @@ export class CategoriesService {
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto, userId: string): Promise<Category> {
+    // Kiểm tra ID có hợp lệ không
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`ID danh mục không hợp lệ: ${id}`);
+    }
+
     // Kiểm tra quyền truy cập
     const category = await this.categoryModel.findById(id);
     if (!category) {
@@ -65,6 +75,11 @@ export class CategoriesService {
   }
 
   async remove(id: string, userId: string): Promise<void> {
+    // Kiểm tra ID có hợp lệ không
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`ID danh mục không hợp lệ: ${id}`);
+    }
+
     // Kiểm tra quyền truy cập
     const category = await this.categoryModel.findById(id);
     if (!category) {

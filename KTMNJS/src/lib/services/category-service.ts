@@ -44,14 +44,48 @@ export const CategoryService = {
   
   getCategory: async (id: string): Promise<Category | undefined> => {
     try {
-      // Kiểm tra trong cache trước
+      console.log(`CategoryService: Đang tìm danh mục với ID: ${id}`);
+
+      // Kiểm tra trong danh sách mặc định trước
+      const defaultCategory = DEFAULT_CATEGORIES.find(category => category.id === id);
+      if (defaultCategory) {
+        console.log(`CategoryService: Tìm thấy danh mục mặc định:`, defaultCategory);
+        return defaultCategory;
+      }
+
+      // Nếu cache rỗng, thử load categories trước
+      if (categoriesCache.length === 0) {
+        console.log('CategoryService: Cache rỗng, đang load categories...');
+        try {
+          await CategoryService.getCategories();
+        } catch (error) {
+          console.warn('CategoryService: Không thể load categories:', error);
+        }
+      }
+
+      // Kiểm tra trong cache sau khi load
       const cachedCategory = categoriesCache.find(category => category.id === id);
-      if (cachedCategory) return cachedCategory;
-      
-      // Nếu không có trong cache, gọi API
-      return await ApiService.categories.getById(id);
+      if (cachedCategory) {
+        console.log(`CategoryService: Tìm thấy trong cache:`, cachedCategory);
+        return cachedCategory;
+      }
+
+      // Chỉ gọi API nếu ID có vẻ như MongoDB ObjectId (24 ký tự hex)
+      if (id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id)) {
+        console.log(`CategoryService: Gọi API cho ObjectId: ${id}`);
+        const apiCategory = await ApiService.categories.getById(id);
+        if (apiCategory) {
+          // Thêm vào cache
+          categoriesCache = [...categoriesCache, apiCategory];
+        }
+        return apiCategory;
+      }
+
+      // Nếu không phải ObjectId hợp lệ, trả về undefined
+      console.warn(`CategoryService: ID danh mục không hợp lệ: ${id}`);
+      return undefined;
     } catch (error) {
-      console.error(`Lỗi khi lấy danh mục với id ${id}:`, error);
+      console.error(`CategoryService: Lỗi khi lấy danh mục với id ${id}:`, error);
       // Kiểm tra trong danh sách mặc định
       return DEFAULT_CATEGORIES.find(category => category.id === id);
     }

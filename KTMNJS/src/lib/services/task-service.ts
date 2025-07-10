@@ -53,7 +53,10 @@ export const TaskService = {
   
   updateTask: async (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Task> => {
     try {
+      console.log(`TaskService: Đang cập nhật task ${id} với data:`, updates);
       const updatedTask = await ApiService.tasks.update(id, updates);
+      console.log(`TaskService: Task ${id} đã được cập nhật:`, updatedTask);
+
       // Cập nhật cache
       const taskIndex = tasksCache.findIndex(task => task.id === id);
       if (taskIndex !== -1) {
@@ -61,7 +64,7 @@ export const TaskService = {
       }
       return updatedTask;
     } catch (error) {
-      console.error(`Lỗi khi cập nhật công việc với id ${id}:`, error);
+      console.error(`TaskService: Lỗi khi cập nhật công việc với id ${id}:`, error);
       throw error;
     }
   },
