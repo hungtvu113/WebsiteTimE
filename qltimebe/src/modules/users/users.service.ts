@@ -33,15 +33,26 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    // Xử lý đặc biệt cho avatar: nếu avatar là undefined hoặc empty string, xóa field avatar
+    const updateData: any = { ...updateUserDto };
+
+    if ('avatar' in updateUserDto) {
+      if (!updateUserDto.avatar || updateUserDto.avatar.trim() === '') {
+        // Xóa field avatar khỏi document
+        updateData.$unset = { avatar: 1 };
+        delete updateData.avatar;
+      }
+    }
+
     const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .select('-password')
       .exec();
-    
+
     if (!updatedUser) {
       throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
     }
-    
+
     return updatedUser;
   }
 

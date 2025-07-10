@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Send, Loader2, X, Minimize2, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Markdown } from '@/components/ui/markdown';
+import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove, cleanupLocalStorage } from '@/lib/utils/json-utils';
 
 interface AIChatboxProps {
   className?: string;
@@ -32,7 +33,7 @@ export function AIChatbox({ className }: AIChatboxProps) {
   const loadChatHistory = (): ChatMessage[] => {
     try {
       const saved = localStorage.getItem(CHAT_HISTORY_KEY);
-      if (saved) {
+      if (saved && saved !== 'undefined' && saved !== 'null') {
         const parsed = JSON.parse(saved);
         // Convert timestamp strings back to Date objects
         return parsed.map((msg: any) => ({
@@ -42,6 +43,8 @@ export function AIChatbox({ className }: AIChatboxProps) {
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
+      // Clear invalid data
+      localStorage.removeItem(CHAT_HISTORY_KEY);
     }
     return [];
   };
@@ -59,17 +62,22 @@ export function AIChatbox({ className }: AIChatboxProps) {
   const loadChatSettings = () => {
     try {
       const saved = localStorage.getItem(CHAT_SETTINGS_KEY);
-      if (saved) {
+      if (saved && saved !== 'undefined' && saved !== 'null') {
         return JSON.parse(saved);
       }
     } catch (error) {
       console.error('Error loading chat settings:', error);
+      // Clear invalid data
+      localStorage.removeItem(CHAT_SETTINGS_KEY);
     }
     return { isOpen: false, isMinimized: false };
   };
 
   // Initialize from localStorage
   useEffect(() => {
+    // Clean up any invalid localStorage items first
+    cleanupLocalStorage();
+
     const savedMessages = loadChatHistory();
     const savedSettings = loadChatSettings();
 

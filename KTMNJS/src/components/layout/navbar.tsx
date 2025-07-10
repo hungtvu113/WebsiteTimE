@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { PreferenceService } from '@/lib/services/preference-service';
+import { useTheme } from 'next-themes';
+
 import { ApiService } from '@/lib/services/api-service';
+import { PreferenceService } from '@/lib/services/preference-service';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -12,40 +14,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Moon, Sun, Calendar, Home, List, Settings, Trash2, BarChart2, LogOut } from 'lucide-react';
+import { Calendar, Home, List, Settings, Trash2, BarChart2, LogOut, UserCircle } from 'lucide-react';
 import { Sidebar, SidebarProvider, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { UserMenu } from './user-menu';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
-  
-  useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const preferences = await PreferenceService.getPreferences();
-        setTheme(preferences.theme);
-      } catch (error) {
-        console.error('Error loading preferences:', error);
-      }
-    };
-    loadPreferences();
-  }, []);
-  
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    PreferenceService.updatePreferences({ theme: newTheme });
-    
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-  
+
   useEffect(() => {
     // Áp dụng theme khi component được mount
     if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -78,6 +56,11 @@ export function Navbar() {
     { href: '/statistics', label: 'Thống kê', icon: <BarChart2 className="h-5 w-5" /> },
     { href: '/projects', label: 'Dự án', icon: <List className="h-5 w-5" /> },
   ];
+
+  const mobileNavItems = [
+    ...navItems,
+    { href: '/profile', label: 'Hồ sơ cá nhân', icon: <UserCircle className="h-5 w-5" /> },
+  ];
   
   return (
     <>
@@ -104,46 +87,7 @@ export function Navbar() {
             ))}
             
             <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleTheme}
-                      aria-label="Toggle theme"
-                    >
-                      {theme === 'dark' ? (
-                        <Sun className="h-5 w-5" />
-                      ) : (
-                        <Moon className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Đổi giao diện {theme === 'dark' ? 'sáng' : 'tối'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleLogout}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <LogOut className="h-5 w-5" />
-                      <span className="sr-only">Đăng xuất</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Đăng xuất</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <UserMenu />
             </div>
           </nav>
           
@@ -204,7 +148,7 @@ export function Navbar() {
                 </Button>
               </div>
               <nav className="flex flex-col gap-4">
-                {navItems.map((item) => (
+                {mobileNavItems.map((item) => (
                   <SidebarLink
                     key={item.href}
                     link={{
@@ -217,25 +161,6 @@ export function Navbar() {
                 ))}
               </nav>
               <div className="flex flex-col gap-3 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={toggleTheme}
-                >
-                  {theme === 'dark' ? (
-                    <span className="flex items-center gap-2">
-                      <Sun className="h-4 w-4" />
-                      Giao diện sáng
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Moon className="h-4 w-4" />
-                      Giao diện tối
-                    </span>
-                  )}
-                </Button>
-
                 <Button
                   variant="outline"
                   size="sm"

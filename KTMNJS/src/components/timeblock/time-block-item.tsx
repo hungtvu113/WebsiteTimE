@@ -39,7 +39,11 @@ export function TimeBlockItem({ timeBlock, onUpdate }: TimeBlockItemProps) {
         console.log('TimeBlockItem: Đang tải task với ID:', timeBlock.taskId);
         const task = await TaskService.getTask(timeBlock.taskId);
         setLinkedTask(task);
-        console.log('TimeBlockItem: Đã tải task:', task);
+        if (task) {
+          console.log('TimeBlockItem: Đã tải task:', task.title);
+        } else {
+          console.log('TimeBlockItem: Task không tồn tại hoặc đã bị xóa');
+        }
       } catch (error) {
         console.error('Lỗi khi tải thông tin công việc liên kết:', error);
         setLinkedTask(undefined);
@@ -180,7 +184,9 @@ export function TimeBlockItem({ timeBlock, onUpdate }: TimeBlockItemProps) {
                     {linkedTask.title}
                   </span>
                 ) : (
-                  <span className="text-muted-foreground">Không tìm thấy công việc</span>
+                  <span className="text-orange-600 dark:text-orange-400 text-xs">
+                    Công việc đã bị xóa hoặc không tồn tại
+                  </span>
                 )}
               </div>
             )}
