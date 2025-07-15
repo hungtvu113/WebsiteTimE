@@ -14,20 +14,25 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('AuthGuard: Bắt đầu kiểm tra authentication...');
       const token = localStorage.getItem('authToken');
-      
+      console.log('AuthGuard: Token từ localStorage:', token ? `${token.substring(0, 20)}...` : 'null');
+
       if (!token) {
+        console.log('AuthGuard: Không có token, chuyển hướng đến login');
         setIsAuthenticated(false);
         router.push('/login');
         return;
       }
 
       try {
+        console.log('AuthGuard: Đang kiểm tra token với API...');
         // Kiểm tra token có hợp lệ không
-        await ApiService.auth.getCurrentUser();
+        const user = await ApiService.auth.getCurrentUser();
+        console.log('AuthGuard: Token hợp lệ, user:', user);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Token không hợp lệ:', error);
+        console.error('AuthGuard: Token không hợp lệ:', error);
         localStorage.removeItem('authToken');
         setIsAuthenticated(false);
         router.push('/login');
