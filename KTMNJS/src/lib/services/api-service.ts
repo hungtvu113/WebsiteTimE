@@ -6,7 +6,19 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 // Hàm trợ giúp để xử lý lỗi từ phản hồi fetch
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
+    console.log(`handleResponse: Response not OK - Status: ${response.status}, StatusText: ${response.statusText}`);
+
+    // Xử lý lỗi 401 (Unauthorized) - token hết hạn hoặc không hợp lệ
+    if (response.status === 401) {
+      console.log('handleResponse: 401 Unauthorized - Xóa token');
+      // Xóa token không hợp lệ
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+      }
+    }
+
     const errorData = await response.json().catch(() => ({}));
+    console.log('handleResponse: Error data:', errorData);
     throw new Error(errorData.message || `Lỗi ${response.status}: ${response.statusText}`);
   }
 
@@ -135,10 +147,18 @@ export const ApiService = {
     },
 
     getCurrentUser: async () => {
+      console.log('ApiService.getCurrentUser: Đang gọi API /auth/me...');
+      const headers = getHeaders();
+      console.log('ApiService.getCurrentUser: Headers:', headers);
+
       const response = await handleFetchError(fetch(`${API_BASE_URL}/auth/me`, {
-        headers: getHeaders(),
+        headers: headers,
       }));
-      return handleResponse(response);
+
+      console.log('ApiService.getCurrentUser: Response status:', response.status);
+      const result = await handleResponse(response);
+      console.log('ApiService.getCurrentUser: Result:', result);
+      return result;
     },
   },
 
@@ -520,6 +540,73 @@ export const ApiService = {
         headers: getHeaders(),
         body: JSON.stringify(updates),
       });
+      return handleResponse(response);
+    },
+  },
+
+  // NOTIFICATIONS ENDPOINTS
+  notifications: {
+    subscribeEmail: async (subscriptionData: {
+      email: string;
+      taskReminders?: boolean;
+      dailySummary?: boolean;
+      weeklyReport?: boolean;
+      reminderHours?: number;
+    }) => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/subscribe`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(subscriptionData),
+      }));
+      return handleResponse(response);
+    },
+
+    subscribeEmailPublic: async (subscriptionData: {
+      email: string;
+      name?: string;
+      taskReminders?: boolean;
+      dailySummary?: boolean;
+      weeklyReport?: boolean;
+      reminderHours?: number;
+    }) => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/subscribe-public`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(subscriptionData),
+      }));
+      return handleResponse(response);
+    },
+
+    getSubscriptions: async () => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/subscriptions`, {
+        headers: getHeaders(),
+      }));
+      return handleResponse(response);
+    },
+
+    updateSubscription: async (id: string, updateData: any) => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/subscriptions/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updateData),
+      }));
+      return handleResponse(response);
+    },
+
+    deleteSubscription: async (id: string) => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/subscriptions/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      }));
+      return handleResponse(response);
+    },
+
+    unsubscribe: async (token: string) => {
+      const response = await handleFetchError(fetch(`${API_BASE_URL}/notifications/email/unsubscribe?token=${token}`, {
+        method: 'POST',
+      }));
       return handleResponse(response);
     },
   },
