@@ -140,6 +140,15 @@ export function TaskList({
     // Chỉ cần cập nhật state local
     setTasks(tasks.filter(t => t.id !== id));
   };
+
+  const handleUpdateTask = (updatedTask: Task) => {
+    // Cập nhật task trong danh sách
+    setTasks(tasks.map(t =>
+      (t.id === updatedTask.id || (t as any)._id === updatedTask.id)
+        ? updatedTask
+        : t
+    ));
+  };
   
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -270,6 +279,7 @@ export function TaskList({
                 key={taskId}
                 task={task}
                 onDelete={handleDeleteTask}
+                onUpdate={handleUpdateTask}
               />
             );
           })}

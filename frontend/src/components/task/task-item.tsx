@@ -22,9 +22,10 @@ import { useStatisticsRefresh } from '@/lib/contexts/statistics-context';
 interface TaskItemProps {
   task: Task;
   onDelete: (id: string) => void;
+  onUpdate?: (updatedTask: Task) => void;
 }
 
-export function TaskItem({ task: initialTask, onDelete }: TaskItemProps) {
+export function TaskItem({ task: initialTask, onDelete, onUpdate }: TaskItemProps) {
   const refreshStatistics = useStatisticsRefresh();
   // Thêm state để theo dõi trạng thái của task bên trong component
   const [task, setTask] = useState<Task>(initialTask);
@@ -102,6 +103,11 @@ export function TaskItem({ task: initialTask, onDelete }: TaskItemProps) {
 
       // Cập nhật trạng thái local để UI cập nhật ngay lập tức
       setTask(updatedTask);
+
+      // Thông báo cho parent component để cập nhật danh sách
+      if (onUpdate) {
+        onUpdate(updatedTask);
+      }
 
       // Trigger statistics refresh
       refreshStatistics();
