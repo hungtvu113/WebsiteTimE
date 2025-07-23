@@ -2,18 +2,30 @@
 
 ## 📋 Giới thiệu
 
-**WebsiteTimE** là một hệ thống quản lý thời gian toàn diện được xây dựng với kiến trúc fullstack hiện đại. Dự án bao gồm ứng dụng web frontend (QLTime) và API backend mạnh mẽ, tích hợp AI để cung cấp trải nghiệm quản lý thời gian thông minh và hiệu quả.
+**WebsiteTimE** là một hệ thống quản lý thời gian toàn diện được xây dựng với kiến trúc fullstack hiện đại. Dự án được tổ chức theo mô hình **monorepo** với pnpm workspace, bao gồm ứng dụng web frontend và API backend mạnh mẽ, tích hợp AI để cung cấp trải nghiệm quản lý thời gian thông minh và hiệu quả.
 
-## 🏗️ Kiến trúc Hệ thống
+## 🏗️ Kiến trúc Monorepo
 
-### Frontend - KTMNJS (QLTime)
+Dự án được tổ chức theo cấu trúc monorepo với pnpm workspace:
+
+```
+WebsiteTimE/
+├── frontend/           # @website-time/frontend
+├── backend/            # @website-time/backend
+├── packages/           # Shared packages (future)
+├── package.json        # Root package.json
+├── pnpm-workspace.yaml # Workspace configuration
+└── pnpm-lock.yaml      # Lock file
+```
+
+### Frontend - @website-time/frontend
 - **Framework**: Next.js 15 với React 19
 - **UI Library**: Shadcn UI + Tailwind CSS
 - **Language**: TypeScript
 - **State Management**: React Hooks
 - **Storage**: LocalStorage + API Integration
 
-### Backend - qltimebe
+### Backend - @website-time/backend
 - **Framework**: NestJS với Fastify
 - **Database**: MongoDB với Mongoose ODM
 - **Authentication**: JWT + Passport
@@ -94,54 +106,83 @@ chmod +x docker-scripts.sh
 
 ---
 
-### 💻 Chạy Local Development
+### 💻 Chạy Local Development với pnpm
 
 **Yêu cầu hệ thống:**
 - Node.js 18+
+- pnpm 8+
 - MongoDB 6+
-- npm hoặc yarn
 
-### 1. Clone Repository
+### 1. Clone Repository và Cài đặt Dependencies
 ```bash
 git clone https://github.com/hungtvu113/WebsiteTimE.git
 cd WebsiteTimE
+
+# Cài đặt pnpm (nếu chưa có)
+npm install -g pnpm
+
+# Cài đặt tất cả dependencies trong workspace
+pnpm install
 ```
 
-### 2. Cài đặt Backend (qltimebe)
-```bash
-cd qltimebe
-npm install
+### 2. Cấu hình Environment Variables
 
-# Tạo file .env
+**Backend (.env):**
+```bash
+cd backend
 cp .env.example .env
 # Cấu hình các biến môi trường trong .env:
 # MONGODB_URI=mongodb://localhost:27017/qltime
 # JWT_SECRET=your_jwt_secret_here
 # GEMINI_API_KEY=your_gemini_api_key_here
-
-# Chạy backend
-npm run start:dev
 ```
 
-Backend sẽ chạy tại: `http://localhost:3001`
-API Documentation: `http://localhost:3001/api/docs`
-
-### 3. Cài đặt Frontend (KTMNJS)
+**Frontend (.env.local):**
 ```bash
-cd ../KTMNJS
-npm install
-
-# Tạo file .env.local
+cd ../frontend
 cp .env.local.example .env.local
 # Cấu hình:
 # NEXT_PUBLIC_API_URL=http://localhost:3001
 # NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
-
-# Chạy frontend
-npm run dev
 ```
 
-Frontend sẽ chạy tại: `http://localhost:3000`
+### 3. Chạy Development Servers
+
+**Chạy tất cả services:**
+```bash
+# Từ root directory
+pnpm dev
+```
+
+**Hoặc chạy riêng từng service:**
+```bash
+# Chạy backend
+pnpm backend:dev
+
+# Chạy frontend (terminal khác)
+pnpm frontend:dev
+```
+
+**Truy cập:**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+- API Docs: http://localhost:3001/api/docs
+
+### 4. Các Scripts Hữu ích
+
+```bash
+# Build tất cả packages
+pnpm build
+
+# Chạy tests
+pnpm test
+
+# Lint code
+pnpm lint
+
+# Clean build artifacts
+pnpm clean
+```
 
 ## 🔧 Cấu hình AI (Google Gemini)
 

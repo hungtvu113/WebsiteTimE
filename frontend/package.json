@@ -1,12 +1,14 @@
 {
-  "name": "ktmnjs",
+  "name": "@website-time/frontend",
   "version": "0.1.0",
+  "description": "Frontend application for WebsiteTimE",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rimraf .next"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
