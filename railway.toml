@@ -1,0 +1,22 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "pnpm run start"
+healthcheckPath = "/api/docs"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Environment variables for Railway deployment
+[env]
+NODE_ENV = "production"
+PORT = "3001"
+
+# Memory optimization settings
+[nixpacks.config]
+memory = "1GB"
+
+# Build configuration
+[build.env]
+NODE_OPTIONS = "--max-old-space-size=1024"

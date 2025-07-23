@@ -1,0 +1,23 @@
+[variables]
+NODE_ENV = "production"
+NODE_OPTIONS = "--max-old-space-size=1024 --optimize-for-size"
+PNPM_VERSION = "8.15.0"
+
+[phases.setup]
+nixPkgs = ["nodejs_18", "pnpm"]
+
+[phases.install]
+cmds = [
+  "pnpm install --frozen-lockfile --prod=false",
+]
+
+[phases.build]
+cmds = [
+  "pnpm run build",
+]
+
+[phases.start]
+cmd = "pnpm run railway:start"
+
+[staticAssets]
+"frontend/public" = "/"
