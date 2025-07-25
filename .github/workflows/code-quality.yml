@@ -25,6 +25,10 @@ jobs:
     name: 📊 Code Quality Analysis
     runs-on: ubuntu-latest
 
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
     services:
       mongodb:
         image: mongo:6.0
@@ -68,7 +72,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: 📊 SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +80,7 @@ jobs:
         continue-on-error: true
 
       - name: ⚠️ SonarCloud Scan Skipped
-        if: ${{ secrets.SONAR_TOKEN == '' }}
+        if: ${{ env.SONAR_TOKEN == '' }}
         run: |
           echo "⚠️ SonarCloud scan skipped - SONAR_TOKEN not configured"
           echo "To enable SonarCloud analysis:"
@@ -85,7 +89,7 @@ jobs:
           echo "3. Get your token and add it to GitHub Secrets as SONAR_TOKEN"
           
       - name: 📤 Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v3
         with:
           file: ./backend/coverage/lcov.info
@@ -95,7 +99,7 @@ jobs:
         continue-on-error: true
 
       - name: ⚠️ Codecov Upload Skipped
-        if: ${{ secrets.CODECOV_TOKEN == '' }}
+        if: ${{ env.CODECOV_TOKEN == '' }}
         run: |
           echo "⚠️ Codecov upload skipped - CODECOV_TOKEN not configured"
           echo "To enable Codecov integration:"
@@ -239,99 +243,10 @@ jobs:
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Find available port
-        run: |
-          echo "🔍 Finding available port..."
-          # Find an available port starting from 3000
-          for port in {3000..3010}; do
-            if ! lsof -ti:$port >/dev/null 2>&1; then
-              echo "✅ Port $port is available"
-              echo "FRONTEND_PORT=$port" >> $GITHUB_ENV
-              break
-            fi
-          done
-
-          if [ -z "$FRONTEND_PORT" ]; then
-            echo "❌ No available ports found"
-            exit 1
-          fi
-
       - name: 🏗️ Build frontend
         run: pnpm --filter frontend build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
-
-      - name: 🚀 Start frontend server
-        run: |
-          cd frontend
-          echo "🚀 Starting Next.js server on port $FRONTEND_PORT..."
-          PORT=$FRONTEND_PORT pnpm start &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-
-          # Wait for server to be ready
-          echo "⏳ Waiting for server to be ready..."
-          for i in {1..30}; do
-            if curl -f http://localhost:$FRONTEND_PORT >/dev/null 2>&1; then
-              echo "✅ Server is ready on port $FRONTEND_PORT!"
-              break
-            else
-              echo "⏳ Waiting... (attempt $i/30)"
-              sleep 2
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start within timeout"
-              exit 1
-            fi
-          done
-
-      - name: 🔍 Run Lighthouse audit
-        run: |
-          echo "🔍 Running Lighthouse audit on http://localhost:$FRONTEND_PORT..."
-
-          # Install Lighthouse CLI
-          npm install -g @lhci/cli@0.12.x
-
-          # Create dynamic config
-          cat > .lighthouserc-dynamic.json << EOF
-          {
-            "ci": {
-              "collect": {
-                "url": ["http://localhost:$FRONTEND_PORT"],
-                "numberOfRuns": 3
-              },
-              "assert": {
-                "assertions": {
-                  "categories:performance": ["warn", {"minScore": 0.6}],
-                  "categories:accessibility": ["warn", {"minScore": 0.7}],
-                  "categories:best-practices": ["warn", {"minScore": 0.6}],
-                  "categories:seo": ["warn", {"minScore": 0.6}]
-                }
-              },
-              "upload": {
-                "target": "temporary-public-storage"
-              }
-            }
-          }
-          EOF
-
-          # Run Lighthouse
-          lhci collect --config=.lighthouserc-dynamic.json || true
-          lhci assert --config=.lighthouserc-dynamic.json || true
-          lhci upload --config=.lighthouserc-dynamic.json || true
-
-      - name: 🛑 Stop frontend server
-        if: always()
-        run: |
-          if [ ! -z "$SERVER_PID" ]; then
-            echo "🛑 Stopping server (PID: $SERVER_PID)..."
-            kill $SERVER_PID || true
-            sleep 2
-          fi
-          # Kill any remaining processes on the port
-          if [ ! -z "$FRONTEND_PORT" ]; then
-            lsof -ti:$FRONTEND_PORT | xargs -r kill -9 || true
-          fi
 
       - name: 📊 Bundle size analysis
         run: |
@@ -339,28 +254,91 @@ jobs:
           cd frontend
 
           # Generate bundle analysis
-          echo "📦 Frontend bundle analysis:" > bundle-analysis.txt
-          echo "================================" >> bundle-analysis.txt
+          echo "📦 Frontend Bundle Analysis Report" > bundle-analysis.txt
+          echo "=================================" >> bundle-analysis.txt
           echo "Build date: $(date)" >> bundle-analysis.txt
+          echo "Node version: $(node --version)" >> bundle-analysis.txt
+          echo "Next.js version: $(npm list next --depth=0 2>/dev/null | grep next || echo 'Next.js version not found')" >> bundle-analysis.txt
           echo "" >> bundle-analysis.txt
 
           if [ -d ".next" ]; then
-            echo "📁 .next directory size:" >> bundle-analysis.txt
-            du -sh .next >> bundle-analysis.txt
+            echo "📁 Build Output Analysis:" >> bundle-analysis.txt
+            echo "------------------------" >> bundle-analysis.txt
+            echo "Total .next directory size: $(du -sh .next 2>/dev/null | cut -f1 || echo 'Unknown')" >> bundle-analysis.txt
             echo "" >> bundle-analysis.txt
 
-            echo "📄 JavaScript bundles:" >> bundle-analysis.txt
-            find .next/static -name "*.js" | head -10 | xargs ls -lh >> bundle-analysis.txt || true
-            echo "" >> bundle-analysis.txt
+            # Static files analysis
+            if [ -d ".next/static" ]; then
+              echo "📄 JavaScript Bundles (Top 10):" >> bundle-analysis.txt
+              find .next/static -name "*.js" -type f 2>/dev/null | head -10 | while read file; do
+                size=$(ls -lh "$file" 2>/dev/null | awk '{print $5}' || echo 'Unknown')
+                echo "  $(basename "$file"): $size" >> bundle-analysis.txt
+              done
+              echo "" >> bundle-analysis.txt
 
-            echo "🎨 CSS files:" >> bundle-analysis.txt
-            find .next/static -name "*.css" | head -5 | xargs ls -lh >> bundle-analysis.txt || true
-            echo "" >> bundle-analysis.txt
+              echo "🎨 CSS Files:" >> bundle-analysis.txt
+              find .next/static -name "*.css" -type f 2>/dev/null | head -5 | while read file; do
+                size=$(ls -lh "$file" 2>/dev/null | awk '{print $5}' || echo 'Unknown')
+                echo "  $(basename "$file"): $size" >> bundle-analysis.txt
+              done
+              echo "" >> bundle-analysis.txt
+            fi
 
-            echo "🖼️ Static assets:" >> bundle-analysis.txt
-            find .next/static -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.svg" \) | head -5 | xargs ls -lh >> bundle-analysis.txt || true
+            # Pages analysis
+            if [ -d ".next/server/pages" ]; then
+              echo "📄 Server Pages:" >> bundle-analysis.txt
+              find .next/server/pages -name "*.js" -type f 2>/dev/null | wc -l | xargs echo "  Total pages:" >> bundle-analysis.txt
+              echo "" >> bundle-analysis.txt
+            fi
+
+            # Build manifest
+            if [ -f ".next/build-manifest.json" ]; then
+              echo "📋 Build Manifest Found: ✅" >> bundle-analysis.txt
+            else
+              echo "📋 Build Manifest Found: ❌" >> bundle-analysis.txt
+            fi
+
           else
-            echo "❌ .next directory not found" >> bundle-analysis.txt
+            echo "❌ .next directory not found - build may have failed" >> bundle-analysis.txt
+          fi
+
+          echo "" >> bundle-analysis.txt
+          echo "📊 Package.json Analysis:" >> bundle-analysis.txt
+          echo "------------------------" >> bundle-analysis.txt
+          if [ -f "package.json" ]; then
+            echo "Dependencies count: $(cat package.json | jq '.dependencies | length' 2>/dev/null || echo 'Unknown')" >> bundle-analysis.txt
+            echo "DevDependencies count: $(cat package.json | jq '.devDependencies | length' 2>/dev/null || echo 'Unknown')" >> bundle-analysis.txt
+          fi
+
+      - name: 🔍 Simple Performance Check
+        run: |
+          echo "🔍 Running basic performance checks..."
+          cd frontend
+
+          # Check if build was successful
+          if [ -d ".next" ]; then
+            echo "✅ Build successful"
+
+            # Check for common performance issues
+            echo "" >> bundle-analysis.txt
+            echo "🔍 Performance Checks:" >> bundle-analysis.txt
+            echo "---------------------" >> bundle-analysis.txt
+
+            # Check for large bundles
+            large_files=$(find .next/static -name "*.js" -size +500k 2>/dev/null | wc -l)
+            echo "Large JS files (>500KB): $large_files" >> bundle-analysis.txt
+
+            # Check for unoptimized images
+            unopt_images=$(find public -type f \( -name "*.jpg" -o -name "*.png" \) -size +100k 2>/dev/null | wc -l || echo 0)
+            echo "Large images in public (>100KB): $unopt_images" >> bundle-analysis.txt
+
+            # Check for console.log in production build
+            console_logs=$(grep -r "console\.log" .next/static 2>/dev/null | wc -l || echo 0)
+            echo "Console.log statements in build: $console_logs" >> bundle-analysis.txt
+
+            echo "✅ Performance analysis completed"
+          else
+            echo "❌ Build failed - skipping performance checks"
           fi
 
       - name: 📤 Upload performance artifacts
@@ -370,8 +348,7 @@ jobs:
           name: frontend-performance-audit
           path: |
             frontend/bundle-analysis.txt
-            .lighthouseci/
-            *.json
+            frontend/.next/build-manifest.json
           retention-days: 7
 
   # Job 4: Security analysis

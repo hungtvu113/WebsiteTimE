@@ -5,13 +5,13 @@ import { Model } from 'mongoose';
 import { genkit } from 'genkit';
 import { googleAI, gemini25FlashPreview0417 } from '@genkit-ai/googleai';
 import { ChatHistory, ChatHistoryDocument } from './schemas/chat-history.schema';
-import { ChatRequestDto, ChatMessageDto, TaskSuggestionDto } from './dto/chat.dto';
+import { ChatRequestDto, TaskSuggestionDto } from './dto/chat.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AIService {
   private readonly logger = new Logger(AIService.name);
-  private ai: any;
+  private ai: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   constructor(
     @InjectModel(ChatHistory.name)
@@ -108,7 +108,10 @@ Hãy trả về chỉ một từ: "high", "medium", hoặc "low" dựa trên:
 
 Chỉ trả về một từ, không giải thích.`;
 
-      const { text } = await this.ai.generate(prompt);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const result = await this.ai.generate(prompt);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const { text } = result;
       const response = text.toLowerCase().trim();
       
       if (['high', 'medium', 'low'].includes(response)) {

@@ -1,12 +1,11 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  UseGuards, 
-  Get, 
-  Query, 
-  Delete,
-  Param 
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Query,
+  Delete
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -45,7 +44,7 @@ export class AIController {
     @Body() chatRequest: ChatRequestDto,
     @GetUser() user: UserDocument
   ): Promise<ChatResponseDto> {
-    return this.aiService.chat(user._id.toString(), chatRequest);
+    return this.aiService.chat(user._id.toString(), chatRequest) as Promise<ChatResponseDto>;
   }
 
   @Post('suggest-priority')
