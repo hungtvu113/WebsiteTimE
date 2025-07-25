@@ -1,0 +1,95 @@
+# Artillery.js performance test configuration
+config:
+  target: 'http://localhost:3001'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Ramp up load"
+    - duration: 300
+      arrivalRate: 15
+      name: "Sustained load"
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: "Health check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          
+  - name: "API documentation"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/docs"
+          
+  - name: "User authentication flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "test{{ $randomString() }}@example.com"
+            password: "TestPassword123!"
+            name: "Test User"
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      - get:
+          url: "/api/auth/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+            
+  - name: "Tasks CRUD operations"
+    weight: 40
+    flow:
+      # Login first
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      # Get tasks
+      - get:
+          url: "/api/tasks"
+          headers:
+            Authorization: "Bearer {{ token }}"
+      # Create task
+      - post:
+          url: "/api/tasks"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            title: "Performance test task {{ $randomString() }}"
+            description: "This is a test task for performance testing"
+            priority: "medium"
+            status: "todo"
+          capture:
+            - json: "$.id"
+              as: "taskId"
+      # Update task
+      - put:
+          url: "/api/tasks/{{ taskId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            title: "Updated performance test task"
+            status: "doing"
+      # Delete task
+      - delete:
+          url: "/api/tasks/{{ taskId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"

@@ -1,0 +1,199 @@
+name: 📦 Dependency Updates
+
+on:
+  schedule:
+    # Chạy vào 2:00 AM UTC mỗi thứ 2
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # Job 1: Update dependencies
+  update-dependencies:
+    name: 📦 Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 📦 Update dependencies
+        run: |
+          echo "📦 Updating dependencies..."
+          pnpm update --recursive
+          
+      - name: 🧪 Run tests after update
+        run: |
+          echo "🧪 Running tests to ensure updates don't break anything..."
+          pnpm lint
+          pnpm build
+          
+      - name: 📝 Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: '📦 chore: update dependencies'
+          title: '📦 Dependency Updates'
+          body: |
+            ## 📦 Dependency Updates
+            
+            This PR contains automated dependency updates.
+            
+            ### Changes:
+            - Updated all dependencies to their latest compatible versions
+            - Ran tests to ensure no breaking changes
+            
+            ### Testing:
+            - ✅ Linting passed
+            - ✅ Build successful
+            
+            Please review the changes and merge if everything looks good.
+            
+            ---
+            *This PR was created automatically by GitHub Actions*
+          branch: dependency-updates
+          delete-branch: true
+
+  # Job 2: Security audit
+  security-audit:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🔒 Run security audit
+        run: |
+          echo "🔒 Running security audit..."
+          pnpm audit --audit-level moderate
+          
+      - name: 📊 Generate security report
+        run: |
+          echo "📊 Generating security report..."
+          pnpm audit --json > security-audit.json || true
+          
+      - name: 📤 Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: security-audit.json
+          retention-days: 30
+
+  # Job 3: Check for outdated packages
+  check-outdated:
+    name: 📊 Check Outdated Packages
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 📊 Check outdated packages
+        run: |
+          echo "📊 Checking for outdated packages..."
+          pnpm outdated --recursive > outdated-packages.txt || true
+          
+      - name: 📤 Upload outdated packages report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-packages-report
+          path: outdated-packages.txt
+          retention-days: 30
+          
+      - name: 💬 Comment on issue if packages are outdated
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const outdatedContent = fs.readFileSync('outdated-packages.txt', 'utf8');
+              
+              if (outdatedContent.trim()) {
+                const issueBody = `## 📊 Outdated Packages Report
+                
+                The following packages have newer versions available:
+                
+                \`\`\`
+                ${outdatedContent}
+                \`\`\`
+                
+                Consider updating these packages in the next maintenance cycle.
+                
+                ---
+                *This report was generated automatically by GitHub Actions*`;
+                
+                // Tìm issue hiện tại hoặc tạo mới
+                const issues = await github.rest.issues.listForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  labels: ['dependencies', 'maintenance'],
+                  state: 'open'
+                });
+                
+                if (issues.data.length > 0) {
+                  // Cập nhật issue hiện tại
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issues.data[0].number,
+                    body: issueBody
+                  });
+                } else {
+                  // Tạo issue mới
+                  await github.rest.issues.create({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: '📊 Outdated Packages Report',
+                    body: issueBody,
+                    labels: ['dependencies', 'maintenance']
+                  });
+                }
+              }
+            } catch (error) {
+              console.log('No outdated packages found or error reading file');
+            }

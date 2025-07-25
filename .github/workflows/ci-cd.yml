@@ -1,0 +1,248 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Job 1: Lint và kiểm tra code quality
+  lint:
+    name: 🔍 Lint & Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🔍 Lint backend
+        run: pnpm --filter backend lint
+        
+      - name: 🔍 Lint frontend
+        run: pnpm --filter frontend lint
+
+  # Job 2: Test backend
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: qltime_test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🧪 Run backend tests
+        run: pnpm --filter backend test
+        env:
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
+          JWT_SECRET: test_jwt_secret
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+  # Job 3: Build và test frontend
+  build-frontend:
+    name: 🏗️ Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🏗️ Build frontend
+        run: pnpm --filter frontend build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          
+      - name: 📦 Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next/
+          retention-days: 1
+
+  # Job 4: Build backend
+  build-backend:
+    name: 🏗️ Build Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🏗️ Build backend
+        run: pnpm --filter backend build
+        
+      - name: 📦 Upload backend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist/
+          retention-days: 1
+
+  # Job 5: Build và push Docker images
+  docker-build:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, build-frontend, build-backend]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: 🏗️ Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: 🏗️ Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 6: Security scan
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🔒 Run Trivy vulnerability scanner - Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:latest
+          format: 'sarif'
+          output: 'backend-trivy-results.sarif'
+          
+      - name: 🔒 Run Trivy vulnerability scanner - Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:latest
+          format: 'sarif'
+          output: 'frontend-trivy-results.sarif'
+          
+      - name: 📤 Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: '.'
+
+  # Job 7: Deploy to staging (chỉ khi push vào main)
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker-build, security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Deploy to staging server
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Backend image: ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ github.sha }}"
+          echo "Frontend image: ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ github.sha }}"
+          # Thêm logic deploy thực tế ở đây (SSH, kubectl, docker-compose, etc.)

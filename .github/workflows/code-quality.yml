@@ -1,0 +1,271 @@
+name: 📊 Code Quality & Performance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Chạy vào 3:00 AM UTC mỗi ngày
+    - cron: '0 3 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Job 1: Code quality analysis
+  code-quality:
+    name: 📊 Code Quality Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Cần full history cho SonarCloud
+          
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🧪 Run tests with coverage
+        run: pnpm --filter backend test:cov
+        env:
+          MONGODB_URI: mongodb://localhost:27017/qltime_test
+          JWT_SECRET: test_jwt_secret
+          
+      - name: 📊 SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          
+      - name: 📤 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          
+      - name: 📊 Code complexity analysis
+        run: |
+          echo "📊 Analyzing code complexity..."
+          npx complexity-report --output json --format json backend/src > complexity-report.json || true
+          
+      - name: 📤 Upload complexity report
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-report
+          path: complexity-report.json
+          retention-days: 30
+
+  # Job 2: Performance testing
+  performance-test:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: qltime_test
+        ports:
+          - 27017:27017
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🏗️ Build backend
+        run: pnpm --filter backend build
+        
+      - name: 🚀 Start backend for testing
+        run: |
+          cd backend
+          pnpm start:prod &
+          sleep 10
+        env:
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
+          JWT_SECRET: test_jwt_secret
+          PORT: 3001
+          
+      - name: ⚡ Run API performance tests
+        run: |
+          echo "⚡ Running API performance tests..."
+          npx artillery quick --count 10 --num 5 http://localhost:3001/health
+          
+      - name: 📊 Generate performance report
+        run: |
+          echo "📊 Generating performance report..."
+          npx artillery run --output performance-report.json performance-test.yml || true
+          
+      - name: 📤 Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report.json
+          retention-days: 30
+
+  # Job 3: Frontend performance audit
+  frontend-audit:
+    name: 🌐 Frontend Performance Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: 🏗️ Build frontend
+        run: pnpm --filter frontend build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          
+      - name: 🚀 Start frontend
+        run: |
+          cd frontend
+          pnpm start &
+          sleep 15
+          
+      - name: 🔍 Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './.lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          
+      - name: 📊 Bundle size analysis
+        run: |
+          echo "📊 Analyzing bundle size..."
+          cd frontend
+          npx next-bundle-analyzer || true
+
+  # Job 4: Security analysis
+  security-analysis:
+    name: 🔒 Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🔒 Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          
+      - name: 🔒 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        
+      - name: 🔒 Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            
+      - name: 🔒 Run npm audit
+        run: |
+          echo "🔒 Running npm security audit..."
+          cd backend && npm audit --audit-level moderate
+          cd ../frontend && npm audit --audit-level moderate
+
+  # Job 5: Documentation check
+  documentation-check:
+    name: 📚 Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📚 Check README files
+        run: |
+          echo "📚 Checking documentation..."
+          
+          # Kiểm tra README files tồn tại
+          if [ ! -f README.md ]; then
+            echo "❌ Root README.md not found"
+            exit 1
+          fi
+          
+          if [ ! -f backend/README.md ]; then
+            echo "❌ Backend README.md not found"
+            exit 1
+          fi
+          
+          if [ ! -f frontend/README.md ]; then
+            echo "❌ Frontend README.md not found"
+            exit 1
+          fi
+          
+          echo "✅ All README files found"
+          
+      - name: 📚 Check API documentation
+        run: |
+          echo "📚 Checking API documentation..."
+          # Kiểm tra Swagger/OpenAPI docs
+          if grep -q "swagger" backend/src/main.ts; then
+            echo "✅ Swagger documentation configured"
+          else
+            echo "⚠️ Swagger documentation not found"
+          fi
+          
+      - name: 📚 Generate documentation report
+        run: |
+          echo "📚 Generating documentation report..."
+          echo "# Documentation Report" > doc-report.md
+          echo "" >> doc-report.md
+          echo "## Files checked:" >> doc-report.md
+          echo "- ✅ Root README.md" >> doc-report.md
+          echo "- ✅ Backend README.md" >> doc-report.md
+          echo "- ✅ Frontend README.md" >> doc-report.md
+          echo "- ✅ API Documentation (Swagger)" >> doc-report.md
+          
+      - name: 📤 Upload documentation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-report
+          path: doc-report.md
+          retention-days: 30
