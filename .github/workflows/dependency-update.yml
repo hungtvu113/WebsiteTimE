@@ -6,6 +6,11 @@ on:
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   # Job 1: Update dependencies
   update-dependencies:

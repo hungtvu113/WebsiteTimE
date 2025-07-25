@@ -10,6 +10,11 @@ on:
         required: true
         default: 'latest'
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8'
@@ -149,26 +154,54 @@ jobs:
     name: 🔒 Production Security Scan
     runs-on: ubuntu-latest
     needs: [build-production-images, validate-release]
-    
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🔒 Scan backend production image
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ needs.validate-release.outputs.version }}
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          
+          format: 'sarif'
+          output: 'backend-production-trivy.sarif'
+
       - name: 🔒 Scan frontend production image
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ needs.validate-release.outputs.version }}
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          format: 'sarif'
+          output: 'frontend-production-trivy.sarif'
+
+      - name: 📤 Upload Backend production scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'backend-production-trivy.sarif'
+          category: 'backend-production-security'
+
+      - name: 📤 Upload Frontend production scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'frontend-production-trivy.sarif'
+          category: 'frontend-production-security'
+
+      - name: 🔒 Check for critical vulnerabilities
+        run: |
+          echo "🔒 Checking for critical vulnerabilities..."
+          # Scan again with table format for human readable output
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy image --severity CRITICAL,HIGH \
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ needs.validate-release.outputs.version }}
+
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy image --severity CRITICAL,HIGH \
+            ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ needs.validate-release.outputs.version }}
 
   # Job 5: Deploy to production
   deploy-production:

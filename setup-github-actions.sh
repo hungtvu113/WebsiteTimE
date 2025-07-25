@@ -146,21 +146,43 @@ else
         echo ""
         read -p "Bạn có muốn setup các secrets tùy chọn? (y/n): " -n 1 -r
         echo ""
-        
+
         if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo ""
+            print_step "Setup SonarCloud (optional):"
+            echo "1. Truy cập https://sonarcloud.io"
+            echo "2. Đăng nhập bằng GitHub"
+            echo "3. Import repository này"
+            echo "4. Lấy token và nhập bên dưới"
+            echo ""
             read -p "📊 SONAR_TOKEN (optional, Enter để bỏ qua): " sonar_token
             if [ ! -z "$sonar_token" ]; then
                 gh secret set SONAR_TOKEN --body "$sonar_token"
+                print_success "SonarCloud token đã được setup!"
+            else
+                print_warning "SonarCloud sẽ được skip trong workflow"
             fi
-            
+
+            echo ""
+            print_step "Setup Codecov (optional):"
+            echo "1. Truy cập https://codecov.io"
+            echo "2. Đăng nhập bằng GitHub"
+            echo "3. Add repository này"
+            echo "4. Lấy upload token và nhập bên dưới"
+            echo ""
             read -p "📈 CODECOV_TOKEN (optional, Enter để bỏ qua): " codecov_token
             if [ ! -z "$codecov_token" ]; then
                 gh secret set CODECOV_TOKEN --body "$codecov_token"
+                print_success "Codecov token đã được setup!"
+            else
+                print_warning "Codecov upload sẽ được skip trong workflow"
             fi
-            
+
+            echo ""
             read -p "📢 SLACK_WEBHOOK_URL (optional, Enter để bỏ qua): " slack_webhook
             if [ ! -z "$slack_webhook" ]; then
                 gh secret set SLACK_WEBHOOK_URL --body "$slack_webhook"
+                print_success "Slack webhook đã được setup!"
             fi
         fi
     fi
@@ -248,4 +270,8 @@ echo "4. Tạo Release để test production deployment"
 echo ""
 echo "📚 Xem thêm hướng dẫn tại: .github/README.md"
 echo ""
-print_warning "Lưu ý: Hãy đảm bảo các external services (SonarCloud, Codecov, Docker Hub) đã được setup đúng cách."
+print_warning "Lưu ý:"
+echo "• SonarCloud và Codecov là optional - workflow sẽ skip nếu không có token"
+echo "• Xem .github/SONARCLOUD-SETUP.md để setup SonarCloud"
+echo "• Docker Hub credentials cần thiết cho production deployment"
+echo "• Tất cả workflows sẽ chạy thành công ngay cả khi thiếu optional tokens"
