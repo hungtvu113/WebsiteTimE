@@ -32,7 +32,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const uri = configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/qltime';
         return { uri };
       },

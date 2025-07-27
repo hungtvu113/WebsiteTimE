@@ -1,58 +1,61 @@
-name: CI/CD Pipeline
+name: 🚀 CI/CD Pipeline
 
 on:
   push:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [ main, develop ]
-
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-  pull-requests: write
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8'
+  REGISTRY: docker.io
+  BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-frontend
 
 jobs:
-  # Job 1: Lint và kiểm tra code quality
+  # 🔍 Lint và Format Check
   lint:
-    name: 🔍 Lint & Code Quality
+    name: 🔍 Lint & Format
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-          
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: 🔍 Lint backend
-        run: pnpm --filter backend lint
-        continue-on-error: true
+        run: pnpm backend:lint
 
       - name: 🔍 Lint frontend
-        run: pnpm --filter frontend lint
-        continue-on-error: true
+        run: pnpm frontend:lint
 
-  # Job 2: Test backend
+      - name: 📝 Check formatting
+        run: |
+          pnpm prettier --check "**/*.{ts,tsx,js,jsx,json,md}"
+
+  # 🧪 Backend Tests
   test-backend:
-    name: 🧪 Test Backend
+    name: 🧪 Backend Tests
     runs-on: ubuntu-latest
-    
     services:
       mongodb:
         image: mongo:6.0
@@ -67,203 +70,233 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-          
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: 🧪 Run backend tests
-        run: pnpm --filter backend test
+        run: pnpm backend:test
         env:
           MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
           JWT_SECRET: test_jwt_secret
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NODE_ENV: test
 
-  # Job 3: Build và test frontend
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # 🏗️ Build Frontend
   build-frontend:
     name: 🏗️ Build Frontend
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-          
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: 🏗️ Build frontend
-        run: pnpm --filter frontend build
+        run: pnpm frontend:build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
-          NEXT_PUBLIC_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          
-      - name: 📦 Upload frontend build artifacts
+
+      - name: 📦 Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/.next/
+          path: frontend/.next
           retention-days: 1
 
-  # Job 4: Build backend
+  # 🏗️ Build Backend
   build-backend:
     name: 🏗️ Build Backend
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-          
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: 🏗️ Build backend
-        run: pnpm --filter backend build
-        
-      - name: 📦 Upload backend build artifacts
+        run: pnpm backend:build
+
+      - name: 📦 Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: backend-build
-          path: backend/dist/
+          path: backend/dist
           retention-days: 1
 
-  # Job 5: Build và push Docker images
+  # 🐳 Docker Build và Push
   docker-build:
-    name: 🐳 Build Docker Images
+    name: 🐳 Docker Build & Push
     runs-on: ubuntu-latest
     needs: [lint, test-backend, build-frontend, build-backend]
-    if: github.ref == 'refs/heads/main'
-    
+    if: github.event_name == 'push'
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: 🔐 Login to Docker Hub
         uses: docker/login-action@v3
         with:
+          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          
+
+      - name: 📝 Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 📝 Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: 🏗️ Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:latest
-            ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ github.sha }}
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          
+
       - name: 🏗️ Build and push frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ github.sha }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.PROD_API_URL || 'http://localhost:3001' }}
 
-  # Job 6: Security scan
+  # 🔒 Security Scan
   security-scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-
+    if: github.event_name == 'push'
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔒 Run Trivy vulnerability scanner - Backend
+      - name: 🔍 Run Trivy vulnerability scanner - Backend
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:latest
+          image-ref: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
           format: 'sarif'
           output: 'backend-trivy-results.sarif'
 
-      - name: 🔒 Run Trivy vulnerability scanner - Frontend
+      - name: 🔍 Run Trivy vulnerability scanner - Frontend
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:latest
+          image-ref: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
           format: 'sarif'
           output: 'frontend-trivy-results.sarif'
 
-      - name: 📤 Upload Backend Trivy scan results to GitHub Security tab
+      - name: 📊 Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'backend-trivy-results.sarif'
-          category: 'backend-security'
+          sarif_file: '.'
 
-      - name: 📤 Upload Frontend Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'frontend-trivy-results.sarif'
-          category: 'frontend-security'
-
-  # Job 7: Deploy to staging (chỉ khi push vào main)
+  # 🚀 Deploy to Staging
   deploy-staging:
     name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [docker-build, security-scan]
-    if: github.ref == 'refs/heads/main'
-    environment: staging
-    
+    needs: [security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
-      - name: 🚀 Deploy to staging server
+
+      - name: 🚀 Deploy to staging
+        id: deploy
         run: |
           echo "🚀 Deploying to staging environment..."
-          echo "Backend image: ${{ secrets.DOCKER_USERNAME }}/websitetime-backend:${{ github.sha }}"
-          echo "Frontend image: ${{ secrets.DOCKER_USERNAME }}/websitetime-frontend:${{ github.sha }}"
-          # Thêm logic deploy thực tế ở đây (SSH, kubectl, docker-compose, etc.)
+          echo "url=https://staging.websitetime.com" >> $GITHUB_OUTPUT
+          # Thêm logic deploy thực tế ở đây
+
+      - name: 🏥 Health check
+        run: |
+          echo "🏥 Running health checks..."
+          # Thêm health check logic ở đây
+
+      - name: 📝 Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Staging deployment successful! Preview: ${{ steps.deploy.outputs.url }}'
+            })

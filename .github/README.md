@@ -1,210 +1,268 @@
-# 🚀 GitHub Actions CI/CD Pipeline
+# 🚀 GitHub Actions CI/CD cho WebsiteTimE
 
-Dự án WebsiteTimE sử dụng GitHub Actions để tự động hóa quá trình CI/CD với các workflow sau:
+## 📋 Tổng quan
 
-## 📋 Danh sách Workflows
+Hệ thống CI/CD hoàn chỉnh cho dự án WebsiteTimE với 4 workflows chính:
 
-### 1. 🔄 CI/CD Pipeline (`ci-cd.yml`)
-**Trigger:** Push/PR vào `main` và `develop`
+### 🔄 Workflows
 
-**Các bước:**
-- 🔍 **Lint & Code Quality**: Kiểm tra code style và quality
-- 🧪 **Test Backend**: Chạy unit tests với MongoDB
-- 🏗️ **Build Frontend**: Build ứng dụng Next.js
-- 🏗️ **Build Backend**: Build ứng dụng NestJS
-- 🐳 **Docker Build**: Build và push Docker images
-- 🔒 **Security Scan**: Quét lỗ hổng bảo mật với Trivy
-- 🚀 **Deploy Staging**: Deploy lên môi trường staging
+1. **[CI/CD Pipeline](workflows/ci-cd.yml)** - Main pipeline cho development
+2. **[Production Deployment](workflows/deploy-production.yml)** - Production releases
+3. **[Dependency Updates](workflows/dependency-update.yml)** - Automated dependency management
+4. **[Code Quality & Performance](workflows/code-quality.yml)** - Quality assurance
 
-### 2. 🚀 Production Deployment (`deploy-production.yml`)
-**Trigger:** Release published hoặc manual dispatch
+## 🚀 Quick Start
 
-**Các bước:**
-- ✅ **Validate Release**: Kiểm tra format version
-- 🧪 **Full Test Suite**: Chạy toàn bộ test suite
-- 🐳 **Build Production Images**: Build Docker images cho production
-- 🔒 **Security Scan**: Quét bảo mật cho production images
-- 🚀 **Deploy Production**: Deploy lên production
-- 🏥 **Health Check**: Kiểm tra sức khỏe sau deploy
+### 1. Chạy Setup Script
 
-### 3. 📦 Dependency Updates (`dependency-update.yml`)
-**Trigger:** Scheduled (Thứ 2 hàng tuần) hoặc manual
-
-**Các bước:**
-- 📦 **Update Dependencies**: Cập nhật dependencies
-- 🧪 **Test Updates**: Kiểm tra sau khi update
-- 📝 **Create PR**: Tạo PR tự động cho updates
-- 🔒 **Security Audit**: Kiểm tra lỗ hổng bảo mật
-- 📊 **Check Outdated**: Báo cáo packages cũ
-
-### 4. 📊 Code Quality & Performance (`code-quality.yml`)
-**Trigger:** Push/PR và scheduled (hàng ngày)
-
-**Các bước:**
-- 📊 **Code Quality Analysis**: SonarCloud, Codecov
-- ⚡ **Performance Testing**: API performance với Artillery
-- 🌐 **Frontend Audit**: Lighthouse CI
-- 🔒 **Security Analysis**: CodeQL, Semgrep
-- 📚 **Documentation Check**: Kiểm tra tài liệu
-
-## 🔧 Setup và Cấu hình
-
-### 1. Repository Secrets
-
-Cần thiết lập các secrets sau trong GitHub repository:
-
-#### 🔑 Authentication & API Keys
-```
-GEMINI_API_KEY=your_gemini_api_key_here
-DOCKER_USERNAME=your_docker_hub_username
-DOCKER_PASSWORD=your_docker_hub_password
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx (tự động có)
+**Windows:**
+```bash
+setup-github-actions.bat
 ```
 
-#### 🌐 Production Environment
-```
-PROD_API_URL=https://api.your-domain.com
-PROD_APP_URL=https://your-domain.com
-```
-
-#### 📊 Code Quality Tools
-```
-SONAR_TOKEN=your_sonarcloud_token
-CODECOV_TOKEN=your_codecov_token
+**Linux/Mac:**
+```bash
+chmod +x setup-github-actions.sh
+./setup-github-actions.sh
 ```
 
-#### 📢 Notifications
+### 2. Setup GitHub Secrets
+
+Vào **Settings → Secrets and variables → Actions** và thêm:
+
+#### 🔑 Required Secrets:
+- `GEMINI_API_KEY` - Google Gemini API key
+- `DOCKER_USERNAME` - Docker Hub username
+- `DOCKER_PASSWORD` - Docker Hub password/token
+- `PROD_API_URL` - Production API URL
+- `PROD_APP_URL` - Production app URL
+
+#### 📊 Optional Secrets:
+- `SONAR_TOKEN` - SonarCloud token
+- `CODECOV_TOKEN` - Codecov token
+- `SLACK_WEBHOOK_URL` - Slack notifications
+
+## 🔄 Workflow Details
+
+### 1. CI/CD Pipeline (`ci-cd.yml`)
+
+**Triggers:** Push/PR to `main`, `develop`
+
+**Jobs:**
+- 🔍 **Lint & Format** - ESLint + Prettier
+- 🧪 **Backend Tests** - Unit tests với MongoDB
+- 🏗️ **Build Frontend** - Next.js build
+- 🏗️ **Build Backend** - NestJS build
+- 🐳 **Docker Build** - Build và push images
+- 🔒 **Security Scan** - Trivy vulnerability scan
+- 🚀 **Deploy Staging** - Auto deploy to staging (main branch only)
+
+### 2. Production Deployment (`deploy-production.yml`)
+
+**Triggers:** GitHub Release hoặc manual dispatch
+
+**Jobs:**
+- ✅ **Validate Release** - Version format validation
+- 🧪 **Full Test Suite** - Complete test run
+- 🏗️ **Build Production** - Production images
+- 🔒 **Security Scan** - Production security check
+- 🚀 **Deploy Production** - Production deployment với approval
+- 🏥 **Health Check** - Post-deployment verification
+- 📢 **Notify** - Slack/Email notifications
+
+### 3. Dependency Updates (`dependency-update.yml`)
+
+**Triggers:** Weekly schedule (Mondays) hoặc manual
+
+**Features:**
+- 📦 Check for outdated packages
+- 🔄 Auto update dependencies
+- 🧪 Test after updates
+- 📝 Create PR automatically
+- 🔒 Security audit
+- 📊 Dependency reports
+
+### 4. Code Quality & Performance (`code-quality.yml`)
+
+**Triggers:** Push/PR và daily schedule
+
+**Features:**
+- 📊 **SonarCloud Analysis** - Code quality metrics
+- ⚡ **Performance Testing** - API performance với Artillery
+- 🌐 **Lighthouse Audit** - Frontend performance
+- 🔒 **Security Analysis** - CodeQL + Semgrep
+- 📚 **Documentation Check** - README và comment analysis
+
+## 🛠️ Configuration Files
+
+### Core Files
+- `.github/workflows/*.yml` - Workflow definitions
+- `.lighthouserc.json` - Lighthouse CI config
+- `sonar-project.properties` - SonarCloud config
+- `performance-test.yml` - Artillery performance tests
+
+### Setup Scripts
+- `setup-github-actions.sh` - Linux/Mac setup
+- `setup-github-actions.bat` - Windows setup
+
+## 📊 Monitoring & Reports
+
+### 🔍 Xem kết quả:
+- **Actions tab** - Workflow runs và logs
+- **Security tab** - Security alerts
+- **Pull Requests** - Automated checks
+- **Artifacts** - Download reports
+
+### 📈 External Services:
+- **SonarCloud** - Code quality dashboard
+- **Codecov** - Test coverage reports
+- **Docker Hub** - Container images
+- **Slack** - Deployment notifications
+
+## 🔧 Customization
+
+### Thêm Environment Mới
+```yaml
+# Trong workflow file
+environment:
+  name: your-environment
+  url: ${{ steps.deploy.outputs.url }}
 ```
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
+
+### Modify Performance Thresholds
+```yaml
+# Trong performance-test.yml
+phases:
+  - duration: 60
+    arrivalRate: 10  # Adjust load
 ```
 
-### 2. Environment Setup
-
-#### 🏗️ Staging Environment
-```
-STAGING_API_URL=https://staging-api.your-domain.com
-STAGING_APP_URL=https://staging.your-domain.com
+### Update Security Scan Settings
+```yaml
+# Trong workflow
+severity: 'CRITICAL,HIGH'  # Adjust severity levels
 ```
 
-#### 🚀 Production Environment
+## 🔒 Security Best Practices
+
+### Branch Protection
+1. Vào **Settings → Branches**
+2. Add rule cho `main` branch:
+   - Require PR reviews
+   - Require status checks
+   - Restrict pushes
+
+### Secret Management
+- Sử dụng GitHub Secrets cho sensitive data
+- Rotate secrets định kỳ
+- Limit secret access theo environment
+
+### Dependency Security
+- Enable Dependabot alerts
+- Review dependency updates
+- Monitor security advisories
+
+## 🚀 Deployment Strategies
+
+### Staging Deployment
+- Auto deploy từ `main` branch
+- Smoke tests sau deployment
+- Environment-specific configs
+
+### Production Deployment
+- Manual approval required
+- Blue-green deployment ready
+- Rollback capabilities
+- Health checks
+
+## 📚 Troubleshooting
+
+### ❌ Common Issues
+
+#### Docker Build Fails
+```bash
+# Check Dockerfile syntax
+docker build -t test .
+
+# Verify dependencies
+pnpm install --frozen-lockfile
 ```
-PROD_API_URL=https://api.your-domain.com
-PROD_APP_URL=https://your-domain.com
+
+#### Tests Fail
+```bash
+# Check MongoDB connection
+docker run -d -p 27017:27017 mongo:6.0
+
+# Verify environment variables
+cat .env.example
 ```
 
-### 3. External Services Setup
+#### Deployment Fails
+```bash
+# Check secrets
+gh secret list
 
-#### 📊 SonarCloud
-1. Đăng ký tại [SonarCloud](https://sonarcloud.io/)
-2. Import repository
-3. Lấy token và thêm vào secrets
-4. Cấu hình trong `sonar-project.properties`
+# Verify server access
+curl -f $PROD_API_URL/health
+```
 
-#### 📈 Codecov
-1. Đăng ký tại [Codecov](https://codecov.io/)
-2. Import repository
-3. Lấy token và thêm vào secrets
+### 🆘 Debug Steps
+1. Check workflow logs trong Actions tab
+2. Download artifacts để analyze
+3. Run workflows locally với `act`
+4. Verify external service status
 
-#### 🐳 Docker Hub
-1. Tạo repository trên Docker Hub
-2. Thêm username/password vào secrets
+## 📈 Performance Optimization
 
-## 📝 Cách sử dụng
+### Workflow Performance
+- Cache dependencies
+- Parallel job execution
+- Conditional job runs
+- Artifact optimization
 
-### 🔄 Development Workflow
+### Build Performance
+- Multi-stage Docker builds
+- Layer caching
+- Dependency optimization
+- Build parallelization
 
-1. **Tạo feature branch:**
-   ```bash
-   git checkout -b feature/new-feature
-   ```
+## 🔄 Maintenance
 
-2. **Push code:**
-   ```bash
-   git push origin feature/new-feature
-   ```
+### Weekly Tasks
+- Review dependency updates
+- Check security alerts
+- Monitor performance metrics
+- Update documentation
 
-3. **Tạo Pull Request:**
-   - CI/CD pipeline sẽ tự động chạy
-   - Kiểm tra kết quả tests và quality checks
-   - Merge sau khi review
+### Monthly Tasks
+- Rotate secrets
+- Review workflow efficiency
+- Update external service configs
+- Performance baseline updates
 
-### 🚀 Release Workflow
+## 📞 Support
 
-1. **Tạo release tag:**
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+### Getting Help
+1. Check workflow logs
+2. Review this documentation
+3. Create issue với `ci/cd` label
+4. Include logs và error messages
 
-2. **Tạo GitHub Release:**
-   - Vào GitHub → Releases → Create new release
-   - Chọn tag vừa tạo
-   - Publish release
+### Useful Commands
+```bash
+# Check workflow status
+gh run list
 
-3. **Production deployment sẽ tự động chạy**
+# View workflow logs
+gh run view <run-id>
 
-### 📦 Dependency Management
+# Trigger manual workflow
+gh workflow run deploy-production.yml
 
-- Dependencies được update tự động mỗi tuần
-- PR sẽ được tạo tự động
-- Review và merge PR để áp dụng updates
+# List secrets
+gh secret list
+```
 
-## 🔍 Monitoring và Debugging
+---
 
-### 📊 Xem kết quả workflows
-- Vào tab **Actions** trong GitHub repository
-- Click vào workflow run để xem chi tiết
-- Download artifacts nếu cần
-
-### 🐛 Debug failed workflows
-1. Kiểm tra logs trong GitHub Actions
-2. Xem artifacts được upload
-3. Chạy lại workflow nếu cần
-
-### 📈 Performance Reports
-- Lighthouse reports: Tự động upload
-- Performance tests: Check artifacts
-- Security scans: Xem trong Security tab
-
-## 🛠️ Customization
-
-### Thêm workflow mới
-1. Tạo file `.yml` trong `.github/workflows/`
-2. Định nghĩa triggers và jobs
-3. Test với workflow_dispatch trước
-
-### Modify existing workflows
-1. Edit file workflow tương ứng
-2. Test changes trên branch riêng
-3. Merge sau khi verify
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-#### ❌ Docker build fails
-- Kiểm tra Dockerfile syntax
-- Verify dependencies trong package.json
-- Check Docker Hub credentials
-
-#### ❌ Tests fail
-- Kiểm tra MongoDB connection
-- Verify environment variables
-- Check test data setup
-
-#### ❌ Deployment fails
-- Verify production secrets
-- Check server accessibility
-- Review deployment scripts
-
-### 📞 Support
-- Tạo issue trong repository
-- Tag với label `ci/cd` hoặc `github-actions`
-- Provide logs và error messages
-
-## 📚 Resources
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Docker Hub](https://hub.docker.com/)
-- [SonarCloud](https://sonarcloud.io/)
-- [Lighthouse CI](https://github.com/GoogleChrome/lighthouse-ci)
+**🎉 Happy Deploying! Chúc bạn có một hệ thống CI/CD mạnh mẽ và ổn định!**

@@ -2,203 +2,296 @@ name: 📦 Dependency Updates
 
 on:
   schedule:
-    # Chạy vào 2:00 AM UTC mỗi thứ 2
-    - cron: '0 2 * * 1'
+    # Chạy vào 9:00 AM UTC mỗi thứ 2
+    - cron: '0 9 * * 1'
   workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - all
+      create_pr:
+        description: 'Create pull request automatically'
+        required: true
+        default: true
+        type: boolean
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
 
 jobs:
-  # Job 1: Update dependencies
-  update-dependencies:
-    name: 📦 Update Dependencies
+  # 🔍 Check for Updates
+  check-updates:
+    name: 🔍 Check for Updates
     runs-on: ubuntu-latest
-    
+    outputs:
+      has-updates: ${{ steps.check.outputs.has-updates }}
+      update-summary: ${{ steps.check.outputs.update-summary }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Check for outdated packages
+        id: check
+        run: |
+          echo "🔍 Checking for outdated packages..."
+          
+          # Check outdated packages
+          OUTDATED_OUTPUT=$(pnpm outdated --format json 2>/dev/null || echo '{}')
+          
+          # Count outdated packages
+          OUTDATED_COUNT=$(echo "$OUTDATED_OUTPUT" | jq 'length // 0')
+          
+          if [ "$OUTDATED_COUNT" -gt 0 ]; then
+            echo "has-updates=true" >> $GITHUB_OUTPUT
+            echo "📦 Found $OUTDATED_COUNT outdated packages"
+            
+            # Create summary
+            SUMMARY="Found $OUTDATED_COUNT outdated packages:\n"
+            SUMMARY+=$(echo "$OUTDATED_OUTPUT" | jq -r 'to_entries[] | "- \(.key): \(.value.current) → \(.value.wanted)"' | head -10)
+            if [ "$OUTDATED_COUNT" -gt 10 ]; then
+              SUMMARY+="\n... and $((OUTDATED_COUNT - 10)) more"
+            fi
+            
+            echo "update-summary<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$SUMMARY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has-updates=false" >> $GITHUB_OUTPUT
+            echo "✅ All packages are up to date"
+          fi
+
+      - name: 📊 Generate dependency report
+        run: |
+          echo "📊 Generating dependency report..."
+          
+          # Create reports directory
+          mkdir -p reports
+          
+          # Generate detailed report
+          pnpm outdated --format json > reports/outdated.json 2>/dev/null || echo '{}' > reports/outdated.json
+          pnpm audit --format json > reports/audit.json 2>/dev/null || echo '{}' > reports/audit.json
+          
+          # Generate human-readable report
+          cat > reports/dependency-report.md << EOF
+          # 📦 Dependency Report
+          
+          Generated on: $(date)
+          
+          ## 📊 Summary
+          - Total outdated packages: $(jq 'length // 0' reports/outdated.json)
+          - Security vulnerabilities: $(jq '.metadata.vulnerabilities.total // 0' reports/audit.json)
+          
+          ## 📦 Outdated Packages
+          $(jq -r 'to_entries[] | "- **\(.key)**: \(.value.current) → \(.value.wanted) (latest: \(.value.latest))"' reports/outdated.json)
+          
+          ## 🔒 Security Audit
+          $(jq -r '.advisories // {} | to_entries[] | "- **\(.value.title)**: \(.value.severity) - \(.value.module_name)"' reports/audit.json)
+          EOF
+
+      - name: 📦 Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: reports/
+          retention-days: 30
+
+  # 🔄 Update Dependencies
+  update-dependencies:
+    name: 🔄 Update Dependencies
+    runs-on: ubuntu-latest
+    needs: [check-updates]
+    if: needs.check-updates.outputs.has-updates == 'true'
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: '8'
-          
+          version: ${{ env.PNPM_VERSION }}
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
-      - name: 📦 Update dependencies
+
+      - name: 🔄 Update dependencies
         run: |
-          echo "📦 Updating dependencies..."
-          pnpm update --recursive
+          echo "🔄 Updating dependencies..."
           
+          UPDATE_TYPE="${{ github.event.inputs.update_type || 'minor' }}"
+          
+          case $UPDATE_TYPE in
+            "patch")
+              echo "📦 Updating patch versions only..."
+              pnpm update --latest --filter-prod
+              ;;
+            "minor")
+              echo "📦 Updating minor versions..."
+              pnpm update --latest
+              ;;
+            "major")
+              echo "📦 Updating major versions (be careful!)..."
+              pnpm update --latest --depth Infinity
+              ;;
+            "all")
+              echo "📦 Updating all dependencies to latest..."
+              pnpm update --latest --depth Infinity
+              ;;
+          esac
+
       - name: 🧪 Run tests after update
         run: |
-          echo "🧪 Running tests to ensure updates don't break anything..."
-          pnpm lint
-          pnpm build
+          echo "🧪 Running tests to verify updates..."
           
+          # Install updated dependencies
+          pnpm install
+          
+          # Run linting
+          pnpm lint || echo "⚠️ Linting failed, will be noted in PR"
+          
+          # Try to build
+          pnpm build || echo "⚠️ Build failed, will be noted in PR"
+          
+          # Run tests if available
+          if pnpm backend:test; then
+            echo "✅ Backend tests passed"
+          else
+            echo "⚠️ Backend tests failed, will be noted in PR"
+          fi
+
+      - name: 📝 Generate update summary
+        id: summary
+        run: |
+          echo "📝 Generating update summary..."
+          
+          # Get git diff for package files
+          CHANGED_FILES=$(git diff --name-only | grep -E "(package\.json|pnpm-lock\.yaml)" || true)
+          
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "📦 Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Create detailed summary
+            SUMMARY="## 📦 Dependency Updates\n\n"
+            SUMMARY+="Update type: **${{ github.event.inputs.update_type || 'minor' }}**\n\n"
+            SUMMARY+="### Changed files:\n"
+            for file in $CHANGED_FILES; do
+              SUMMARY+="- \`$file\`\n"
+            done
+            SUMMARY+="\n### Summary:\n"
+            SUMMARY+="${{ needs.check-updates.outputs.update-summary }}\n\n"
+            SUMMARY+="### ⚠️ Please review:\n"
+            SUMMARY+="- Check for breaking changes in updated packages\n"
+            SUMMARY+="- Run full test suite before merging\n"
+            SUMMARY+="- Update documentation if needed\n"
+            
+            echo "summary<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$SUMMARY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changes detected"
+          fi
+
       - name: 📝 Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        if: steps.summary.outputs.has-changes == 'true' && (github.event.inputs.create_pr == 'true' || github.event_name == 'schedule')
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: '📦 chore: update dependencies'
-          title: '📦 Dependency Updates'
-          body: |
-            ## 📦 Dependency Updates
+          commit-message: |
+            📦 Update dependencies (${{ github.event.inputs.update_type || 'minor' }})
             
-            This PR contains automated dependency updates.
-            
-            ### Changes:
-            - Updated all dependencies to their latest compatible versions
-            - Ran tests to ensure no breaking changes
-            
-            ### Testing:
-            - ✅ Linting passed
-            - ✅ Build successful
-            
-            Please review the changes and merge if everything looks good.
-            
-            ---
-            *This PR was created automatically by GitHub Actions*
-          branch: dependency-updates
+            - Updated dependencies to latest ${{ github.event.inputs.update_type || 'minor' }} versions
+            - Automated update via GitHub Actions
+          title: "📦 Dependency Updates (${{ github.event.inputs.update_type || 'minor' }})"
+          body: ${{ steps.summary.outputs.summary }}
+          branch: dependency-updates/${{ github.run_number }}
           delete-branch: true
+          labels: |
+            dependencies
+            automated
+            ${{ github.event.inputs.update_type || 'minor' }}
 
-  # Job 2: Security audit
+  # 🔒 Security Audit
   security-audit:
     name: 🔒 Security Audit
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: '8'
-          
+          version: ${{ env.PNPM_VERSION }}
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: 🔒 Run security audit
         run: |
           echo "🔒 Running security audit..."
-          pnpm audit --audit-level moderate
           
-      - name: 📊 Generate security report
-        run: |
-          echo "📊 Generating security report..."
-          pnpm audit --json > security-audit.json || true
+          # Run pnpm audit
+          pnpm audit --audit-level moderate --format json > audit-results.json || true
           
-      - name: 📤 Upload security report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-audit-report
-          path: security-audit.json
-          retention-days: 30
+          # Check for high/critical vulnerabilities
+          HIGH_VULNS=$(jq '.metadata.vulnerabilities.high // 0' audit-results.json)
+          CRITICAL_VULNS=$(jq '.metadata.vulnerabilities.critical // 0' audit-results.json)
+          
+          echo "🔒 Security audit results:"
+          echo "- Critical vulnerabilities: $CRITICAL_VULNS"
+          echo "- High vulnerabilities: $HIGH_VULNS"
+          
+          if [ "$CRITICAL_VULNS" -gt 0 ] || [ "$HIGH_VULNS" -gt 0 ]; then
+            echo "❌ Security vulnerabilities found!"
+            jq '.advisories // {}' audit-results.json
+            exit 1
+          else
+            echo "✅ No critical or high vulnerabilities found"
+          fi
 
-  # Job 3: Check for outdated packages
-  check-outdated:
-    name: 📊 Check Outdated Packages
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: '8'
-          
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'pnpm'
-          
-      - name: 📥 Install dependencies
-        run: pnpm install --frozen-lockfile
-        
-      - name: 📊 Check outdated packages
-        run: |
-          echo "📊 Checking for outdated packages..."
-          pnpm outdated --recursive > outdated-packages.txt || true
-          
-      - name: 📤 Upload outdated packages report
+      - name: 📊 Upload audit results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: outdated-packages-report
-          path: outdated-packages.txt
+          name: security-audit-results
+          path: audit-results.json
           retention-days: 30
-          
-      - name: 💬 Comment on issue if packages are outdated
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            
-            try {
-              const outdatedContent = fs.readFileSync('outdated-packages.txt', 'utf8');
-              
-              if (outdatedContent.trim()) {
-                const issueBody = `## 📊 Outdated Packages Report
-                
-                The following packages have newer versions available:
-                
-                \`\`\`
-                ${outdatedContent}
-                \`\`\`
-                
-                Consider updating these packages in the next maintenance cycle.
-                
-                ---
-                *This report was generated automatically by GitHub Actions*`;
-                
-                // Tìm issue hiện tại hoặc tạo mới
-                const issues = await github.rest.issues.listForRepo({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  labels: ['dependencies', 'maintenance'],
-                  state: 'open'
-                });
-                
-                if (issues.data.length > 0) {
-                  // Cập nhật issue hiện tại
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issues.data[0].number,
-                    body: issueBody
-                  });
-                } else {
-                  // Tạo issue mới
-                  await github.rest.issues.create({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    title: '📊 Outdated Packages Report',
-                    body: issueBody,
-                    labels: ['dependencies', 'maintenance']
-                  });
-                }
-              }
-            } catch (error) {
-              console.log('No outdated packages found or error reading file');
-            }

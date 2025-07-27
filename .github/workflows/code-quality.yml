@@ -6,29 +6,56 @@ on:
   pull_request:
     branches: [ main, develop ]
   schedule:
-    # Chạy vào 3:00 AM UTC mỗi ngày
-    - cron: '0 3 * * *'
-
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-  pull-requests: write
+    # Chạy hàng ngày lúc 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8'
 
 jobs:
-  # Job 1: Code quality analysis
-  code-quality:
-    name: 📊 Code Quality Analysis
+  # 📊 SonarCloud Analysis
+  sonarcloud:
+    name: 📊 SonarCloud Analysis
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
 
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Run tests with coverage
+        run: |
+          pnpm backend:test --coverage
+        env:
+          NODE_ENV: test
+
+      - name: 📊 SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ⚡ Performance Testing
+  performance:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
     services:
       mongodb:
         image: mongo:6.0
@@ -47,190 +74,143 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Cần full history cho SonarCloud
-          
+
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-          
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          
+
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-        
-      - name: 🧪 Run tests with coverage
-        run: pnpm --filter backend test:cov
-        env:
-          MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
-          JWT_SECRET: test_jwt_secret
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 📊 SonarCloud Scan
-        if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true
-
-      - name: ⚠️ SonarCloud Scan Skipped
-        if: ${{ env.SONAR_TOKEN == '' }}
-        run: |
-          echo "⚠️ SonarCloud scan skipped - SONAR_TOKEN not configured"
-          echo "To enable SonarCloud analysis:"
-          echo "1. Sign up at https://sonarcloud.io"
-          echo "2. Import your repository"
-          echo "3. Get your token and add it to GitHub Secrets as SONAR_TOKEN"
-          
-      - name: 📤 Upload coverage to Codecov
-        if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./backend/coverage/lcov.info
-          flags: backend
-          name: backend-coverage
-          token: ${{ secrets.CODECOV_TOKEN }}
-        continue-on-error: true
-
-      - name: ⚠️ Codecov Upload Skipped
-        if: ${{ env.CODECOV_TOKEN == '' }}
-        run: |
-          echo "⚠️ Codecov upload skipped - CODECOV_TOKEN not configured"
-          echo "To enable Codecov integration:"
-          echo "1. Sign up at https://codecov.io"
-          echo "2. Import your repository"
-          echo "3. Get your token and add it to GitHub Secrets as CODECOV_TOKEN"
-          
-      - name: 📊 Code complexity analysis
-        run: |
-          echo "📊 Analyzing code complexity..."
-
-          # Install complexity analysis tools
-          npm install -g complexity-report typescript-analyzer || true
-
-          # Generate complexity report
-          echo "📊 Code Complexity Report" > complexity-report.txt
-          echo "=========================" >> complexity-report.txt
-          echo "Generated: $(date)" >> complexity-report.txt
-          echo "" >> complexity-report.txt
-
-          # Analyze backend complexity
-          echo "🔧 Backend Analysis:" >> complexity-report.txt
-          echo "-------------------" >> complexity-report.txt
-
-          if [ -d "backend/src" ]; then
-            # Count files and lines
-            echo "📁 Total TypeScript files: $(find backend/src -name "*.ts" | wc -l)" >> complexity-report.txt
-            echo "📄 Total lines of code: $(find backend/src -name "*.ts" -exec wc -l {} + | tail -1 | awk '{print $1}')" >> complexity-report.txt
-            echo "" >> complexity-report.txt
-
-            # Find largest files
-            echo "📈 Largest files:" >> complexity-report.txt
-            find backend/src -name "*.ts" -exec wc -l {} + | sort -nr | head -5 >> complexity-report.txt
-            echo "" >> complexity-report.txt
-          fi
-
-          # Analyze frontend complexity
-          echo "🌐 Frontend Analysis:" >> complexity-report.txt
-          echo "--------------------" >> complexity-report.txt
-
-          if [ -d "frontend/src" ]; then
-            echo "📁 Total React files: $(find frontend/src -name "*.tsx" -o -name "*.ts" | wc -l)" >> complexity-report.txt
-            echo "📄 Total lines of code: $(find frontend/src -name "*.tsx" -o -name "*.ts" -exec wc -l {} + | tail -1 | awk '{print $1}')" >> complexity-report.txt
-            echo "" >> complexity-report.txt
-
-            # Find largest components
-            echo "📈 Largest components:" >> complexity-report.txt
-            find frontend/src -name "*.tsx" -exec wc -l {} + | sort -nr | head -5 >> complexity-report.txt
-          fi
-
-      - name: 📤 Upload complexity report
-        uses: actions/upload-artifact@v4
-        with:
-          name: complexity-report
-          path: complexity-report.txt
-          retention-days: 30
-
-  # Job 2: Performance testing
-  performance-test:
-    name: ⚡ Performance Testing
-    runs-on: ubuntu-latest
-    
-    services:
-      mongodb:
-        image: mongo:6.0
-        env:
-          MONGO_INITDB_ROOT_USERNAME: admin
-          MONGO_INITDB_ROOT_PASSWORD: password123
-          MONGO_INITDB_DATABASE: qltime_test
-        ports:
-          - 27017:27017
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          
-      - name: 📥 Install dependencies
-        run: pnpm install --frozen-lockfile
-        
-      - name: 🏗️ Build backend
-        run: pnpm --filter backend build
-        
       - name: 🚀 Start backend for testing
         run: |
-          cd backend
-          pnpm start:prod &
-          sleep 10
+          pnpm backend:build
+          pnpm backend:start &
+          echo $! > backend.pid
+          
+          # Wait for backend to start
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            echo "⏳ Waiting for backend... ($i/30)"
+            sleep 2
+          done
         env:
           MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
           JWT_SECRET: test_jwt_secret
+          NODE_ENV: production
           PORT: 3001
-          
+
+      - name: 📦 Install Artillery
+        run: npm install -g artillery@latest
+
       - name: ⚡ Run API performance tests
         run: |
           echo "⚡ Running API performance tests..."
-          npx artillery quick --count 10 --num 5 http://localhost:3001/health
           
-      - name: 📊 Generate performance report
+          # Create performance test config if not exists
+          if [ ! -f "performance-test.yml" ]; then
+            cat > performance-test.yml << EOF
+          config:
+            target: 'http://localhost:3001'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+                name: "Warm up"
+              - duration: 120
+                arrivalRate: 20
+                name: "Load test"
+              - duration: 60
+                arrivalRate: 50
+                name: "Stress test"
+            processor: "./performance-processor.js"
+          
+          scenarios:
+            - name: "Health check"
+              weight: 20
+              flow:
+                - get:
+                    url: "/health"
+            
+            - name: "API endpoints"
+              weight: 80
+              flow:
+                - get:
+                    url: "/api"
+                    expect:
+                      - statusCode: 200
+          EOF
+          fi
+          
+          # Run performance tests
+          artillery run performance-test.yml --output performance-results.json
+          
+          # Generate HTML report
+          artillery report performance-results.json --output performance-report.html
+
+      - name: 📊 Analyze performance results
         run: |
-          echo "📊 Generating performance report..."
-          npx artillery run --output performance-report.json performance-test.yml || true
+          echo "📊 Analyzing performance results..."
           
-      - name: 📤 Upload performance report
+          # Extract key metrics
+          if [ -f "performance-results.json" ]; then
+            echo "📈 Performance Summary:"
+            echo "- Total requests: $(jq '.aggregate.counters["http.requests"] // 0' performance-results.json)"
+            echo "- Success rate: $(jq '.aggregate.counters["http.responses"] // 0' performance-results.json)"
+            echo "- Average response time: $(jq '.aggregate.latency.mean // 0' performance-results.json)ms"
+            echo "- 95th percentile: $(jq '.aggregate.latency.p95 // 0' performance-results.json)ms"
+            echo "- 99th percentile: $(jq '.aggregate.latency.p99 // 0' performance-results.json)ms"
+            
+            # Check if performance is acceptable
+            AVG_RESPONSE=$(jq '.aggregate.latency.mean // 0' performance-results.json)
+            P95_RESPONSE=$(jq '.aggregate.latency.p95 // 0' performance-results.json)
+            
+            if (( $(echo "$AVG_RESPONSE > 1000" | bc -l) )); then
+              echo "⚠️ Average response time is high: ${AVG_RESPONSE}ms"
+            fi
+            
+            if (( $(echo "$P95_RESPONSE > 2000" | bc -l) )); then
+              echo "⚠️ 95th percentile response time is high: ${P95_RESPONSE}ms"
+            fi
+          fi
+
+      - name: 🛑 Stop backend
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+            rm backend.pid
+          fi
+
+      - name: 📦 Upload performance results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: performance-report
-          path: performance-report.json
+          name: performance-results
+          path: |
+            performance-results.json
+            performance-report.html
           retention-days: 30
 
-  # Job 3: Frontend performance audit
-  frontend-audit:
-    name: 🌐 Frontend Performance Audit
+  # 🌐 Frontend Lighthouse Audit
+  lighthouse:
+    name: 🌐 Lighthouse Audit
     runs-on: ubuntu-latest
-
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -244,146 +224,82 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🏗️ Build frontend
-        run: pnpm --filter frontend build
+        run: pnpm frontend:build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
 
-      - name: 📊 Bundle size analysis
+      - name: 🚀 Start frontend
         run: |
-          echo "📊 Analyzing bundle size..."
-          cd frontend
-
-          # Generate bundle analysis
-          echo "📦 Frontend Bundle Analysis Report" > bundle-analysis.txt
-          echo "=================================" >> bundle-analysis.txt
-          echo "Build date: $(date)" >> bundle-analysis.txt
-          echo "Node version: $(node --version)" >> bundle-analysis.txt
-          echo "Next.js version: $(npm list next --depth=0 2>/dev/null | grep next || echo 'Next.js version not found')" >> bundle-analysis.txt
-          echo "" >> bundle-analysis.txt
-
-          if [ -d ".next" ]; then
-            echo "📁 Build Output Analysis:" >> bundle-analysis.txt
-            echo "------------------------" >> bundle-analysis.txt
-            echo "Total .next directory size: $(du -sh .next 2>/dev/null | cut -f1 || echo 'Unknown')" >> bundle-analysis.txt
-            echo "" >> bundle-analysis.txt
-
-            # Static files analysis
-            if [ -d ".next/static" ]; then
-              echo "📄 JavaScript Bundles (Top 10):" >> bundle-analysis.txt
-              find .next/static -name "*.js" -type f 2>/dev/null | head -10 | while read file; do
-                size=$(ls -lh "$file" 2>/dev/null | awk '{print $5}' || echo 'Unknown')
-                echo "  $(basename "$file"): $size" >> bundle-analysis.txt
-              done
-              echo "" >> bundle-analysis.txt
-
-              echo "🎨 CSS Files:" >> bundle-analysis.txt
-              find .next/static -name "*.css" -type f 2>/dev/null | head -5 | while read file; do
-                size=$(ls -lh "$file" 2>/dev/null | awk '{print $5}' || echo 'Unknown')
-                echo "  $(basename "$file"): $size" >> bundle-analysis.txt
-              done
-              echo "" >> bundle-analysis.txt
+          pnpm frontend:start &
+          echo $! > frontend.pid
+          
+          # Wait for frontend to start
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Frontend is ready"
+              break
             fi
+            echo "⏳ Waiting for frontend... ($i/30)"
+            sleep 2
+          done
 
-            # Pages analysis
-            if [ -d ".next/server/pages" ]; then
-              echo "📄 Server Pages:" >> bundle-analysis.txt
-              find .next/server/pages -name "*.js" -type f 2>/dev/null | wc -l | xargs echo "  Total pages:" >> bundle-analysis.txt
-              echo "" >> bundle-analysis.txt
-            fi
-
-            # Build manifest
-            if [ -f ".next/build-manifest.json" ]; then
-              echo "📋 Build Manifest Found: ✅" >> bundle-analysis.txt
-            else
-              echo "📋 Build Manifest Found: ❌" >> bundle-analysis.txt
-            fi
-
-          else
-            echo "❌ .next directory not found - build may have failed" >> bundle-analysis.txt
-          fi
-
-          echo "" >> bundle-analysis.txt
-          echo "📊 Package.json Analysis:" >> bundle-analysis.txt
-          echo "------------------------" >> bundle-analysis.txt
-          if [ -f "package.json" ]; then
-            echo "Dependencies count: $(cat package.json | jq '.dependencies | length' 2>/dev/null || echo 'Unknown')" >> bundle-analysis.txt
-            echo "DevDependencies count: $(cat package.json | jq '.devDependencies | length' 2>/dev/null || echo 'Unknown')" >> bundle-analysis.txt
-          fi
-
-      - name: 🔍 Simple Performance Check
+      - name: 🌐 Run Lighthouse CI
         run: |
-          echo "🔍 Running basic performance checks..."
-          cd frontend
-
-          # Check if build was successful
-          if [ -d ".next" ]; then
-            echo "✅ Build successful"
-
-            # Check for common performance issues
-            echo "" >> bundle-analysis.txt
-            echo "🔍 Performance Checks:" >> bundle-analysis.txt
-            echo "---------------------" >> bundle-analysis.txt
-
-            # Check for large bundles
-            large_files=$(find .next/static -name "*.js" -size +500k 2>/dev/null | wc -l)
-            echo "Large JS files (>500KB): $large_files" >> bundle-analysis.txt
-
-            # Check for unoptimized images
-            unopt_images=$(find public -type f \( -name "*.jpg" -o -name "*.png" \) -size +100k 2>/dev/null | wc -l || echo 0)
-            echo "Large images in public (>100KB): $unopt_images" >> bundle-analysis.txt
-
-            # Check for console.log in production build
-            console_logs=$(grep -r "console\.log" .next/static 2>/dev/null | wc -l || echo 0)
-            echo "Console.log statements in build: $console_logs" >> bundle-analysis.txt
-
-            echo "✅ Performance analysis completed"
-          else
-            echo "❌ Build failed - skipping performance checks"
+          npm install -g @lhci/cli@latest
+          
+          # Create Lighthouse CI config if not exists
+          if [ ! -f ".lighthouserc.json" ]; then
+            cat > .lighthouserc.json << EOF
+          {
+            "ci": {
+              "collect": {
+                "url": ["http://localhost:3000"],
+                "numberOfRuns": 3
+              },
+              "assert": {
+                "assertions": {
+                  "categories:performance": ["warn", {"minScore": 0.8}],
+                  "categories:accessibility": ["error", {"minScore": 0.9}],
+                  "categories:best-practices": ["warn", {"minScore": 0.8}],
+                  "categories:seo": ["warn", {"minScore": 0.8}]
+                }
+              },
+              "upload": {
+                "target": "temporary-public-storage"
+              }
+            }
+          }
+          EOF
           fi
+          
+          lhci autorun
 
-      - name: 📤 Upload performance artifacts
-        uses: actions/upload-artifact@v4
+      - name: 🛑 Stop frontend
         if: always()
-        with:
-          name: frontend-performance-audit
-          path: |
-            frontend/bundle-analysis.txt
-            frontend/.next/build-manifest.json
-          retention-days: 7
+        run: |
+          if [ -f frontend.pid ]; then
+            kill $(cat frontend.pid) || true
+            rm frontend.pid
+          fi
 
-  # Job 4: Security analysis
-  security-analysis:
+  # 🔒 Security Analysis
+  security:
     name: 🔒 Security Analysis
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       actions: read
       contents: read
-
+      security-events: write
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: 📥 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🔒 Run CodeQL Analysis
+      - name: 🔍 Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
-      - name: 🔒 Perform CodeQL Analysis
+      - name: 🔍 Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
       - name: 🔒 Run Semgrep
@@ -392,70 +308,76 @@ jobs:
           config: >-
             p/security-audit
             p/secrets
-            p/owasp-top-ten
-        continue-on-error: true
+            p/javascript
+            p/typescript
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: 🔒 Run npm audit
-        run: |
-          echo "🔒 Running npm security audit..."
-          cd backend && pnpm audit --audit-level moderate || true
-          cd ../frontend && pnpm audit --audit-level moderate || true
-
-  # Job 5: Documentation check
-  documentation-check:
+  # 📚 Documentation Check
+  docs:
     name: 📚 Documentation Check
     runs-on: ubuntu-latest
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
       - name: 📚 Check README files
         run: |
           echo "📚 Checking documentation..."
           
-          # Kiểm tra README files tồn tại
-          if [ ! -f README.md ]; then
-            echo "❌ Root README.md not found"
+          # Check if main README exists and is not empty
+          if [ ! -f "README.md" ] || [ ! -s "README.md" ]; then
+            echo "❌ Main README.md is missing or empty"
             exit 1
           fi
           
-          if [ ! -f backend/README.md ]; then
-            echo "❌ Backend README.md not found"
-            exit 1
-          fi
+          # Check for other important docs
+          DOCS_TO_CHECK=("frontend/README.md" "backend/README.md")
           
-          if [ ! -f frontend/README.md ]; then
-            echo "❌ Frontend README.md not found"
-            exit 1
-          fi
-          
-          echo "✅ All README files found"
-          
-      - name: 📚 Check API documentation
+          for doc in "${DOCS_TO_CHECK[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "⚠️ Missing documentation: $doc"
+            else
+              echo "✅ Found: $doc"
+            fi
+          done
+
+      - name: 📝 Check for TODO comments
         run: |
-          echo "📚 Checking API documentation..."
-          # Kiểm tra Swagger/OpenAPI docs
-          if grep -q "swagger" backend/src/main.ts; then
-            echo "✅ Swagger documentation configured"
-          else
-            echo "⚠️ Swagger documentation not found"
+          echo "📝 Checking for TODO comments..."
+          
+          TODO_COUNT=$(grep -r "TODO\|FIXME\|HACK" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . | wc -l)
+          
+          echo "📝 Found $TODO_COUNT TODO/FIXME/HACK comments"
+          
+          if [ "$TODO_COUNT" -gt 50 ]; then
+            echo "⚠️ High number of TODO comments found. Consider addressing some of them."
           fi
-          
-      - name: 📚 Generate documentation report
+
+      - name: 📊 Generate documentation report
         run: |
-          echo "📚 Generating documentation report..."
-          echo "# Documentation Report" > doc-report.md
-          echo "" >> doc-report.md
-          echo "## Files checked:" >> doc-report.md
-          echo "- ✅ Root README.md" >> doc-report.md
-          echo "- ✅ Backend README.md" >> doc-report.md
-          echo "- ✅ Frontend README.md" >> doc-report.md
-          echo "- ✅ API Documentation (Swagger)" >> doc-report.md
+          echo "📊 Generating documentation report..."
           
-      - name: 📤 Upload documentation report
+          cat > docs-report.md << EOF
+          # 📚 Documentation Report
+          
+          Generated on: $(date)
+          
+          ## 📋 Documentation Status
+          - Main README: $([ -f "README.md" ] && echo "✅ Present" || echo "❌ Missing")
+          - Frontend README: $([ -f "frontend/README.md" ] && echo "✅ Present" || echo "❌ Missing")
+          - Backend README: $([ -f "backend/README.md" ] && echo "✅ Present" || echo "❌ Missing")
+          - Docker README: $([ -f "README-DOCKER.md" ] && echo "✅ Present" || echo "❌ Missing")
+          
+          ## 📝 Code Comments
+          - TODO comments: $(grep -r "TODO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . | wc -l)
+          - FIXME comments: $(grep -r "FIXME" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . | wc -l)
+          - HACK comments: $(grep -r "HACK" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . | wc -l)
+          EOF
+
+      - name: 📦 Upload documentation report
         uses: actions/upload-artifact@v4
         with:
           name: documentation-report
-          path: doc-report.md
+          path: docs-report.md
           retention-days: 30
