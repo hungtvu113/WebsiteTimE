@@ -22,8 +22,6 @@ env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8.15.0'
   REGISTRY: docker.io
-  BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-backend
-  FRONTEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-frontend
 
 jobs:
   # ✅ Validate Release
@@ -154,8 +152,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.validate.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-backend:${{ needs.validate.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -166,8 +164,8 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ needs.validate.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-frontend:${{ needs.validate.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -176,8 +174,8 @@ jobs:
       - name: 📝 Set image outputs
         id: image
         run: |
-          echo "backend-image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.validate.outputs.version }}" >> $GITHUB_OUTPUT
-          echo "frontend-image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ needs.validate.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "backend-image=${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-backend:${{ needs.validate.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "frontend-image=${{ env.REGISTRY }}/${{ github.repository_owner }}/websitetime-frontend:${{ needs.validate.outputs.version }}" >> $GITHUB_OUTPUT
 
   # 🔒 Security Scan
   security:
