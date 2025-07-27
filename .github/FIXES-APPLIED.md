@@ -51,7 +51,29 @@ PNPM_VERSION: '8.15.0'
 - Graceful degradation when tools are not available
 - More informative error messages
 
-### 4. **⚡ Performance Test Optimizations**
+### 4. **🧪 Fixed Backend Test Coverage Command**
+
+**Problem:** `pnpm backend:test --coverage` failed with "Unknown option: 'coverage'"
+
+**Solution:** Use correct test script for coverage
+
+**Files Changed:**
+- `.github/workflows/ci-cd.yml`
+- `.github/workflows/deploy-production.yml`
+- `.github/workflows/code-quality.yml`
+- `.github/workflows/dependency-update.yml`
+- `package.json` (added backend:test:cov script)
+
+**Change:**
+```yaml
+# Before
+run: pnpm backend:test --coverage
+
+# After
+run: pnpm --filter backend test:cov
+```
+
+### 5. **⚡ Performance Test Optimizations**
 
 **Changes:**
 - Reduced test duration for faster CI runs

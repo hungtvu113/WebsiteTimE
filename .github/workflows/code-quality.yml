@@ -20,6 +20,20 @@ jobs:
     name: 📊 SonarCloud Analysis
     runs-on: ubuntu-latest
     if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: qltime_test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -42,8 +56,10 @@ jobs:
 
       - name: 🧪 Run tests with coverage
         run: |
-          pnpm backend:test --coverage
+          pnpm --filter backend test:cov
         env:
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
+          JWT_SECRET: test_jwt_secret
           NODE_ENV: test
 
       - name: 📊 SonarCloud Scan

@@ -17,6 +17,7 @@
     "backend:build": "pnpm --filter backend build",
     "backend:start": "pnpm --filter backend start:prod",
     "backend:test": "pnpm --filter backend test",
+    "backend:test:cov": "pnpm --filter backend test:cov",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
     "docker:prod": "docker-compose up",
     "docker:down": "docker-compose down"

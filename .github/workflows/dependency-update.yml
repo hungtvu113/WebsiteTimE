@@ -182,7 +182,7 @@ jobs:
           pnpm build || echo "⚠️ Build failed, will be noted in PR"
           
           # Run tests if available
-          if pnpm backend:test; then
+          if pnpm --filter backend test; then
             echo "✅ Backend tests passed"
           else
             echo "⚠️ Backend tests failed, will be noted in PR"

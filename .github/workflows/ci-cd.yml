@@ -90,7 +90,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🧪 Run backend tests
-        run: pnpm backend:test
+        run: pnpm --filter backend test:cov
         env:
           MONGODB_URI: mongodb://admin:password123@localhost:27017/qltime_test?authSource=admin
           JWT_SECRET: test_jwt_secret
