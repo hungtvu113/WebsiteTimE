@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Task } from './schemas/task.schema';
@@ -7,9 +11,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(
-    @InjectModel(Task.name) private taskModel: Model<Task>,
-  ) {}
+  constructor(@InjectModel(Task.name) private taskModel: Model<Task>) {}
 
   async create(createTaskDto: CreateTaskDto, userId: string): Promise<Task> {
     const newTask = new this.taskModel({
@@ -48,7 +50,7 @@ export class TasksService {
       const date = new Date(filters.dueDate);
       const startOfDay = new Date(date.setHours(0, 0, 0, 0));
       const endOfDay = new Date(date.setHours(23, 59, 59, 999));
-      
+
       query.dueDate = {
         $gte: startOfDay,
         $lte: endOfDay,
@@ -82,7 +84,11 @@ export class TasksService {
     return task;
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto, userId: string): Promise<Task> {
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+    userId: string,
+  ): Promise<Task> {
     // Kiểm tra quyền truy cập
     const task = await this.taskModel.findById(id);
     if (!task) {
@@ -103,7 +109,7 @@ export class TasksService {
     if (!updatedTask) {
       throw new NotFoundException(`Không tìm thấy công việc với ID: ${id}`);
     }
-    
+
     return updatedTask;
   }
 
@@ -138,7 +144,11 @@ export class TasksService {
     return task.save();
   }
 
-  async updateStatus(id: string, status: string, userId: string): Promise<Task> {
+  async updateStatus(
+    id: string,
+    status: string,
+    userId: string,
+  ): Promise<Task> {
     // Kiểm tra quyền truy cập
     const task = await this.taskModel.findById(id);
     if (!task) {
@@ -159,13 +169,16 @@ export class TasksService {
     const futureTime = new Date();
     futureTime.setHours(futureTime.getHours() + hours);
 
-    return this.taskModel.find({
-      user: new Types.ObjectId(userId),
-      completed: false,
-      dueDate: {
-        $gte: now,
-        $lte: futureTime,
-      },
-    }).sort({ dueDate: 1 }).exec();
+    return this.taskModel
+      .find({
+        user: new Types.ObjectId(userId),
+        completed: false,
+        dueDate: {
+          $gte: now,
+          $lte: futureTime,
+        },
+      })
+      .sort({ dueDate: 1 })
+      .exec();
   }
 }

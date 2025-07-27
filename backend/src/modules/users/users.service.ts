@@ -7,9 +7,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const newUser = new this.userModel(createUserDto);
@@ -60,7 +58,7 @@ export class UsersService {
     const result = await this.userModel
       .updateOne({ _id: id }, { password: hashedPassword })
       .exec();
-    
+
     if (result.matchedCount === 0) {
       throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
     }
@@ -68,7 +66,7 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     const result = await this.userModel.deleteOne({ _id: id }).exec();
-    
+
     if (result.deletedCount === 0) {
       throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
     }

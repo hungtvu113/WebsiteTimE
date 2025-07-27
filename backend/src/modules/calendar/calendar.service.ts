@@ -17,9 +17,9 @@ export class CalendarService {
 
     // Lấy tất cả khối thời gian trong khoảng thời gian
     const timeBlocks = await this.timeBlocksService.findAll(userId);
-    
+
     // Lọc khối thời gian trong khoảng thời gian
-    const filteredTimeBlocks = timeBlocks.filter(block => {
+    const filteredTimeBlocks = timeBlocks.filter((block) => {
       const blockDate = new Date(block.startTime);
       return blockDate >= new Date(start) && blockDate <= new Date(end);
     });
@@ -55,6 +55,10 @@ export class CalendarService {
     endOfWeek.setHours(23, 59, 59, 999);
 
     // Lấy dữ liệu lịch cho cả tuần
-    return this.getCalendarData(userId, startOfWeek.toISOString(), endOfWeek.toISOString());
+    return this.getCalendarData(
+      userId,
+      startOfWeek.toISOString(),
+      endOfWeek.toISOString(),
+    );
   }
 }

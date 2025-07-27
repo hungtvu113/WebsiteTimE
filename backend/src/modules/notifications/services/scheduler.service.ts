@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { PublicEmailSubscription, PublicEmailSubscriptionDocument } from '../schemas/public-email-subscription.schema';
+import {
+  PublicEmailSubscription,
+  PublicEmailSubscriptionDocument,
+} from '../schemas/public-email-subscription.schema';
 import { EmailService } from './email.service';
 import { TasksService } from '../../tasks/tasks.service';
 import { UsersService } from '../../users/users.service';
@@ -26,15 +29,17 @@ export class SchedulerService {
   })
   async sendDailyTaskReminders() {
     this.logger.log('Bắt đầu gửi thông báo nhắc nhở hàng ngày...');
-    
+
     try {
       // Gửi thông báo cho public subscriptions
       const publicResult = await this.sendPublicTaskReminders();
-      
+
       // Gửi thông báo cho user subscriptions (đã có sẵn)
       const userResult = await this.sendUserTaskReminders();
 
-      this.logger.log(`Hoàn thành gửi thông báo: Public(${publicResult.sent}/${publicResult.total}), User(${userResult.sent}/${userResult.failed})`);
+      this.logger.log(
+        `Hoàn thành gửi thông báo: Public(${publicResult.sent}/${publicResult.total}), User(${userResult.sent}/${userResult.failed})`,
+      );
     } catch (error) {
       this.logger.error('Lỗi khi gửi thông báo hàng ngày:', error);
     }
@@ -47,11 +52,11 @@ export class SchedulerService {
   })
   async sendUrgentTaskReminders() {
     this.logger.log('Kiểm tra tasks cần thông báo khẩn cấp...');
-    
+
     try {
       // Chỉ gửi cho tasks hết hạn trong 4 giờ tới
       const publicResult = await this.sendPublicTaskReminders(4);
-      
+
       if (publicResult.sent > 0) {
         this.logger.log(`Đã gửi ${publicResult.sent} thông báo khẩn cấp`);
       }
@@ -60,7 +65,9 @@ export class SchedulerService {
     }
   }
 
-  private async sendPublicTaskReminders(urgentHours?: number): Promise<{ sent: number; failed: number; total: number }> {
+  private async sendPublicTaskReminders(
+    urgentHours?: number,
+  ): Promise<{ sent: number; failed: number; total: number }> {
     let sent = 0;
     let failed = 0;
 
@@ -70,15 +77,19 @@ export class SchedulerService {
       taskReminders: true,
     });
 
-    this.logger.log(`Tìm thấy ${subscriptions.length} public email subscriptions`);
+    this.logger.log(
+      `Tìm thấy ${subscriptions.length} public email subscriptions`,
+    );
 
     for (const subscription of subscriptions) {
       try {
         // Tìm user có email này
         const user = await this.usersService.findByEmail(subscription.email);
-        
+
         if (!user) {
-          this.logger.debug(`Không tìm thấy user với email: ${subscription.email}`);
+          this.logger.debug(
+            `Không tìm thấy user với email: ${subscription.email}`,
+          );
           continue;
         }
 
@@ -86,7 +97,10 @@ export class SchedulerService {
         const hoursToCheck = urgentHours || subscription.reminderHours;
 
         // Lấy tasks sắp hết hạn của user
-        const tasks = await this.tasksService.findTasksDueSoon((user as any)._id.toString(), hoursToCheck);
+        const tasks = await this.tasksService.findTasksDueSoon(
+          (user as any)._id.toString(),
+          hoursToCheck,
+        );
 
         if (tasks.length > 0) {
           // Kiểm tra đã gửi thông báo trong thời gian gần đây chưa
@@ -97,7 +111,7 @@ export class SchedulerService {
               subscription.email,
               subscription.name || 'Bạn',
               tasks,
-              subscription.unsubscribeToken
+              subscription.unsubscribeToken,
             );
 
             if (success) {
@@ -105,18 +119,27 @@ export class SchedulerService {
               subscription.lastNotificationSent = new Date();
               await subscription.save();
               sent++;
-              
-              this.logger.log(`Đã gửi thông báo cho ${subscription.email}: ${tasks.length} tasks`);
+
+              this.logger.log(
+                `Đã gửi thông báo cho ${subscription.email}: ${tasks.length} tasks`,
+              );
             } else {
               failed++;
-              this.logger.error(`Gửi thông báo thất bại cho ${subscription.email}`);
+              this.logger.error(
+                `Gửi thông báo thất bại cho ${subscription.email}`,
+              );
             }
           } else {
-            this.logger.debug(`Bỏ qua ${subscription.email} - đã gửi thông báo gần đây`);
+            this.logger.debug(
+              `Bỏ qua ${subscription.email} - đã gửi thông báo gần đây`,
+            );
           }
         }
       } catch (error) {
-        this.logger.error(`Lỗi khi xử lý subscription ${subscription.email}:`, error);
+        this.logger.error(
+          `Lỗi khi xử lý subscription ${subscription.email}:`,
+          error,
+        );
         failed++;
       }
     }
@@ -124,20 +147,27 @@ export class SchedulerService {
     return { sent, failed, total: subscriptions.length };
   }
 
-  private async sendUserTaskReminders(): Promise<{ sent: number; failed: number }> {
+  private async sendUserTaskReminders(): Promise<{
+    sent: number;
+    failed: number;
+  }> {
     // Sử dụng logic có sẵn từ NotificationsService
     // Có thể inject NotificationsService và gọi sendTaskReminders()
     return { sent: 0, failed: 0 };
   }
 
-  private shouldSendReminder(subscription: PublicEmailSubscription, urgentHours?: number): boolean {
+  private shouldSendReminder(
+    subscription: PublicEmailSubscription,
+    urgentHours?: number,
+  ): boolean {
     if (!subscription.lastNotificationSent) {
       return true; // Chưa từng gửi
     }
 
     const now = new Date();
     const lastSent = new Date(subscription.lastNotificationSent);
-    const hoursSinceLastSent = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
+    const hoursSinceLastSent =
+      (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
 
     if (urgentHours) {
       // Thông báo khẩn cấp: chỉ gửi nếu đã qua 2 giờ

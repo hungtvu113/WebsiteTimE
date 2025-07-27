@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsBoolean, IsNumber, IsString, Min, Max } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class PublicSubscribeEmailDto {

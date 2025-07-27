@@ -1,11 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { UserDocument } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Dự án')
 @Controller('api/projects')
@@ -19,7 +33,10 @@ export class ProjectsController {
   @ApiResponse({ status: 201, description: 'Tạo thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  create(@Body() createProjectDto: CreateProjectDto, @GetUser() user: UserDocument) {
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @GetUser() user: UserDocument,
+  ) {
     return this.projectsService.create(createProjectDto, user._id.toString());
   }
 
@@ -53,7 +70,11 @@ export class ProjectsController {
     @Body() updateProjectDto: UpdateProjectDto,
     @GetUser() user: UserDocument,
   ) {
-    return this.projectsService.update(id, updateProjectDto, user._id.toString());
+    return this.projectsService.update(
+      id,
+      updateProjectDto,
+      user._id.toString(),
+    );
   }
 
   @Delete(':id')
@@ -73,16 +94,19 @@ export class ProjectsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy dự án' })
-  async getProjectTasks(@Param('id') id: string, @GetUser() user: UserDocument) {
+  async getProjectTasks(
+    @Param('id') id: string,
+    @GetUser() user: UserDocument,
+  ) {
     // Kiểm tra dự án tồn tại và thuộc về người dùng
     await this.projectsService.findById(id, user._id.toString());
-    
+
     // Gọi service tasks để lấy danh sách công việc theo dự án
     // Lưu ý: Cần inject TasksService hoặc tạo một phương thức riêng trong ProjectsService
     // Đây là mẫu trả về tạm thời
-    return { 
+    return {
       message: 'Chức năng này cần được kết nối với TasksService',
-      projectId: id
+      projectId: id,
     };
   }
 }

@@ -27,17 +27,19 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
     // Cấu hình Schedule/Cron jobs
     ScheduleModule.forRoot(),
-    
+
     // Kết nối MongoDB
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const uri = configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/qltime';
+        const uri =
+          configService.get<string>('MONGODB_URI') ||
+          'mongodb://localhost:27017/qltime';
         return { uri };
       },
     }),
-    
+
     // Các module chức năng
     AuthModule,
     UsersModule,

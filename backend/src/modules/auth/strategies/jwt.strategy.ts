@@ -13,7 +13,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'qltime_secret_key',
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') || 'qltime_secret_key',
     });
   }
 
@@ -22,7 +23,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.usersService.findById(sub);
 
     if (!user) {
-      throw new UnauthorizedException('Người dùng không tồn tại hoặc token không hợp lệ');
+      throw new UnauthorizedException(
+        'Người dùng không tồn tại hoặc token không hợp lệ',
+      );
     }
 
     return user;

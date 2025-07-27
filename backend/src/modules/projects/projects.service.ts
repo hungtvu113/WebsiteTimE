@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project } from './schemas/project.schema';
@@ -11,7 +15,10 @@ export class ProjectsService {
     @InjectModel(Project.name) private projectModel: Model<Project>,
   ) {}
 
-  async create(createProjectDto: CreateProjectDto, userId: string): Promise<Project> {
+  async create(
+    createProjectDto: CreateProjectDto,
+    userId: string,
+  ): Promise<Project> {
     const newProject = new this.projectModel({
       ...createProjectDto,
       user: userId,
@@ -41,7 +48,11 @@ export class ProjectsService {
     return project;
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto, userId: string): Promise<Project> {
+  async update(
+    id: string,
+    updateProjectDto: UpdateProjectDto,
+    userId: string,
+  ): Promise<Project> {
     // Kiểm tra quyền truy cập
     const project = await this.projectModel.findById(id);
     if (!project) {

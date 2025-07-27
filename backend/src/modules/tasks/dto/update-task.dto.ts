@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsBoolean, IsDate, IsEnum, IsArray, IsMongoId } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsDate,
+  IsEnum,
+  IsArray,
+  IsMongoId,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskPriority, ScrumTaskStatus } from '../schemas/task.schema';
@@ -69,7 +77,9 @@ export class UpdateTaskDto {
     example: 'doing',
   })
   @IsOptional()
-  @IsEnum(['backlog', 'todo', 'doing', 'done'], { message: 'Trạng thái Scrum không hợp lệ' })
+  @IsEnum(['backlog', 'todo', 'doing', 'done'], {
+    message: 'Trạng thái Scrum không hợp lệ',
+  })
   status?: ScrumTaskStatus;
 
   @ApiPropertyOptional({

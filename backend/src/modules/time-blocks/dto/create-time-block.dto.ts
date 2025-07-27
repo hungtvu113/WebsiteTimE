@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsDate, IsMongoId, ValidateIf } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsDate,
+  IsMongoId,
+  ValidateIf,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -42,7 +50,9 @@ export class CreateTimeBlockDto {
     example: '60d21b4667d0d8992e610c85',
   })
   @IsOptional()
-  @ValidateIf((o) => o.taskId !== null && o.taskId !== undefined && o.taskId !== '')
+  @ValidateIf(
+    (o) => o.taskId !== null && o.taskId !== undefined && o.taskId !== '',
+  )
   @IsMongoId({ message: 'ID công việc không hợp lệ' })
   taskId?: string | null;
 }

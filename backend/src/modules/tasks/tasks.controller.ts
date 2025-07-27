@@ -1,11 +1,28 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { UserDocument } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('Công việc')
 @Controller('api/tasks')
@@ -28,15 +45,20 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Thành công' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiQuery({ name: 'completed', required: false, type: Boolean })
-  @ApiQuery({ name: 'priority', required: false, enum: ['low', 'medium', 'high'] })
+  @ApiQuery({
+    name: 'priority',
+    required: false,
+    enum: ['low', 'medium', 'high'],
+  })
   @ApiQuery({ name: 'dueDate', required: false })
   @ApiQuery({ name: 'category', required: false })
-  @ApiQuery({ name: 'status', required: false, enum: ['backlog', 'todo', 'doing', 'done'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['backlog', 'todo', 'doing', 'done'],
+  })
   @ApiQuery({ name: 'projectId', required: false })
-  findAll(
-    @GetUser() user: UserDocument,
-    @Query() query: any,
-  ) {
+  findAll(@GetUser() user: UserDocument, @Query() query: any) {
     // Map projectId to project for service compatibility
     if (query.projectId) {
       query.project = query.projectId;
@@ -67,7 +89,11 @@ export class TasksController {
     @Body() updateTaskDto: UpdateTaskDto,
     @GetUser() user: UserDocument,
   ) {
-    return await this.tasksService.update(id, updateTaskDto, user._id.toString());
+    return await this.tasksService.update(
+      id,
+      updateTaskDto,
+      user._id.toString(),
+    );
   }
 
   @Delete(':id')

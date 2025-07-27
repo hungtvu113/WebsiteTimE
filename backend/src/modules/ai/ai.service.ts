@@ -4,14 +4,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { genkit } from 'genkit';
 import { googleAI, gemini25FlashPreview0417 } from '@genkit-ai/googleai';
-import { ChatHistory, ChatHistoryDocument } from './schemas/chat-history.schema';
+import {
+  ChatHistory,
+  ChatHistoryDocument,
+} from './schemas/chat-history.schema';
 import { ChatRequestDto, TaskSuggestionDto } from './dto/chat.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AIService {
   private readonly logger = new Logger(AIService.name);
-  private ai: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  private ai: any;
 
   constructor(
     @InjectModel(ChatHistory.name)
@@ -25,7 +28,9 @@ export class AIService {
     try {
       const apiKey = this.configService.get<string>('GEMINI_API_KEY');
       if (!apiKey) {
-        this.logger.warn('GEMINI_API_KEY not found. AI features will be limited.');
+        this.logger.warn(
+          'GEMINI_API_KEY not found. AI features will be limited.',
+        );
         return;
       }
 
@@ -49,13 +54,24 @@ export class AIService {
       const sessionId = chatRequest.sessionId || uuidv4();
 
       // Lưu tin nhắn người dùng
-      await this.saveChatMessage(userId, 'user', chatRequest.message, sessionId);
+      await this.saveChatMessage(
+        userId,
+        'user',
+        chatRequest.message,
+        sessionId,
+      );
 
       // Tạo context từ lịch sử chat
       const chatHistory = chatRequest.chatHistory || [];
-      const historyContext = chatHistory.length > 0 
-        ? chatHistory.map(msg => `${msg.role === 'user' ? 'Người dùng' : 'AI'}: ${msg.content}`).join('\n')
-        : '';
+      const historyContext =
+        chatHistory.length > 0
+          ? chatHistory
+              .map(
+                (msg) =>
+                  `${msg.role === 'user' ? 'Người dùng' : 'AI'}: ${msg.content}`,
+              )
+              .join('\n')
+          : '';
 
       const prompt = `
 Bạn là Dr.AITime, một trợ lý AI thông minh chuyên về quản lý thời gian và công việc.
@@ -88,7 +104,9 @@ Trả lời bằng tiếng Việt.`;
     }
   }
 
-  async suggestPriority(taskSuggestion: TaskSuggestionDto): Promise<'high' | 'medium' | 'low'> {
+  async suggestPriority(
+    taskSuggestion: TaskSuggestionDto,
+  ): Promise<'high' | 'medium' | 'low'> {
     try {
       if (!this.ai) {
         return this.fallbackSuggestPriority(taskSuggestion);
@@ -110,14 +128,14 @@ Chỉ trả về một từ, không giải thích.`;
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result = await this.ai.generate(prompt);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const { text } = result;
       const response = text.toLowerCase().trim();
-      
+
       if (['high', 'medium', 'low'].includes(response)) {
         return response as 'high' | 'medium' | 'low';
       }
-      
+
       return 'medium';
     } catch (error) {
       this.logger.error('Error suggesting priority:', error);
@@ -125,7 +143,9 @@ Chỉ trả về một từ, không giải thích.`;
     }
   }
 
-  async suggestDueDate(taskSuggestion: TaskSuggestionDto): Promise<string | null> {
+  async suggestDueDate(
+    taskSuggestion: TaskSuggestionDto,
+  ): Promise<string | null> {
     try {
       if (!this.ai) {
         return this.fallbackSuggestDueDate(taskSuggestion);
@@ -149,11 +169,11 @@ Chỉ trả về số nguyên, không giải thích.`;
 
       const { text } = await this.ai.generate(prompt);
       const daysToAdd = parseInt(text.trim());
-      
+
       if (isNaN(daysToAdd) || daysToAdd < 1 || daysToAdd > 365) {
         return this.fallbackSuggestDueDate(taskSuggestion);
       }
-      
+
       const dueDate = new Date(today);
       dueDate.setDate(today.getDate() + daysToAdd);
       return dueDate.toISOString().split('T')[0];
@@ -163,7 +183,11 @@ Chỉ trả về số nguyên, không giải thích.`;
     }
   }
 
-  async getChatHistory(userId: string, sessionId?: string, limit: number = 50): Promise<ChatHistory[]> {
+  async getChatHistory(
+    userId: string,
+    sessionId?: string,
+    limit: number = 50,
+  ): Promise<ChatHistory[]> {
     const query: any = { userId };
     if (sessionId) {
       query.sessionId = sessionId;
@@ -186,10 +210,10 @@ Chỉ trả về số nguyên, không giải thích.`;
   }
 
   private async saveChatMessage(
-    userId: string, 
-    role: 'user' | 'assistant', 
-    content: string, 
-    sessionId: string
+    userId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    sessionId: string,
   ): Promise<void> {
     try {
       const chatMessage = new this.chatHistoryModel({
@@ -206,44 +230,68 @@ Chỉ trả về số nguyên, không giải thích.`;
     }
   }
 
-  private fallbackSuggestPriority(taskSuggestion: TaskSuggestionDto): 'high' | 'medium' | 'low' {
+  private fallbackSuggestPriority(
+    taskSuggestion: TaskSuggestionDto,
+  ): 'high' | 'medium' | 'low' {
     const title = taskSuggestion.title.toLowerCase();
     const description = taskSuggestion.description?.toLowerCase() || '';
-    
-    const highPriorityKeywords = ['gấp', 'khẩn', 'ngay', 'quan trọng', 'deadline', 'hạn chót'];
-    const lowPriorityKeywords = ['nhẹ nhàng', 'khi rảnh', 'không gấp', 'sau này', 'phụ'];
-    
+
+    const highPriorityKeywords = [
+      'gấp',
+      'khẩn',
+      'ngay',
+      'quan trọng',
+      'deadline',
+      'hạn chót',
+    ];
+    const lowPriorityKeywords = [
+      'nhẹ nhàng',
+      'khi rảnh',
+      'không gấp',
+      'sau này',
+      'phụ',
+    ];
+
     for (const keyword of highPriorityKeywords) {
       if (title.includes(keyword) || description.includes(keyword)) {
         return 'high';
       }
     }
-    
+
     for (const keyword of lowPriorityKeywords) {
       if (title.includes(keyword) || description.includes(keyword)) {
         return 'low';
       }
     }
-    
+
     return 'medium';
   }
 
-  private fallbackSuggestDueDate(taskSuggestion: TaskSuggestionDto): string | null {
+  private fallbackSuggestDueDate(
+    taskSuggestion: TaskSuggestionDto,
+  ): string | null {
     try {
       const title = taskSuggestion.title.toLowerCase();
       const description = taskSuggestion.description?.toLowerCase() || '';
-      
+
       const today = new Date();
       let daysToAdd = 7;
-      
-      if (title.includes('gấp') || title.includes('khẩn') || description.includes('gấp')) {
+
+      if (
+        title.includes('gấp') ||
+        title.includes('khẩn') ||
+        description.includes('gấp')
+      ) {
         daysToAdd = 1;
-      } else if (title.includes('tuần này') || description.includes('tuần này')) {
+      } else if (
+        title.includes('tuần này') ||
+        description.includes('tuần này')
+      ) {
         daysToAdd = 5;
       } else if (title.includes('tháng') || description.includes('tháng')) {
         daysToAdd = 30;
       }
-      
+
       const dueDate = new Date(today);
       dueDate.setDate(today.getDate() + daysToAdd);
       return dueDate.toISOString().split('T')[0];

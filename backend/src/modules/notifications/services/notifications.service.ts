@@ -1,9 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { EmailSubscription, EmailSubscriptionDocument } from '../schemas/email-subscription.schema';
-import { PublicEmailSubscription, PublicEmailSubscriptionDocument } from '../schemas/public-email-subscription.schema';
-import { SubscribeEmailDto, UpdateEmailSubscriptionDto } from '../dto/subscribe-email.dto';
+import {
+  EmailSubscription,
+  EmailSubscriptionDocument,
+} from '../schemas/email-subscription.schema';
+import {
+  PublicEmailSubscription,
+  PublicEmailSubscriptionDocument,
+} from '../schemas/public-email-subscription.schema';
+import {
+  SubscribeEmailDto,
+  UpdateEmailSubscriptionDto,
+} from '../dto/subscribe-email.dto';
 import { PublicSubscribeEmailDto } from '../dto/public-subscribe-email.dto';
 import { EmailService } from './email.service';
 import { TasksService } from '../../tasks/tasks.service';
@@ -22,7 +31,10 @@ export class NotificationsService {
     private usersService: UsersService,
   ) {}
 
-  async subscribeEmail(userId: string, subscribeDto: SubscribeEmailDto): Promise<EmailSubscription> {
+  async subscribeEmail(
+    userId: string,
+    subscribeDto: SubscribeEmailDto,
+  ): Promise<EmailSubscription> {
     // Kiểm tra user tồn tại
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -43,10 +55,10 @@ export class NotificationsService {
         unsubscribeToken: uuidv4(),
       });
       await existingSubscription.save();
-      
+
       // Gửi email chào mừng
       await this.emailService.sendWelcomeEmail(subscribeDto.email, user.name);
-      
+
       return existingSubscription;
     }
 
@@ -69,11 +81,14 @@ export class NotificationsService {
     return subscription;
   }
 
-  async subscribeEmailPublic(subscribeDto: PublicSubscribeEmailDto): Promise<PublicEmailSubscription> {
+  async subscribeEmailPublic(
+    subscribeDto: PublicSubscribeEmailDto,
+  ): Promise<PublicEmailSubscription> {
     // Kiểm tra email đã đăng ký chưa
-    const existingSubscription = await this.publicEmailSubscriptionModel.findOne({
-      email: subscribeDto.email,
-    });
+    const existingSubscription =
+      await this.publicEmailSubscriptionModel.findOne({
+        email: subscribeDto.email,
+      });
 
     if (existingSubscription) {
       // Nếu đã tồn tại, cập nhật thông tin
@@ -89,7 +104,7 @@ export class NotificationsService {
       await this.emailService.sendWelcomeEmailPublic(
         subscribeDto.email,
         subscribeDto.name || 'Bạn',
-        existingSubscription.unsubscribeToken
+        existingSubscription.unsubscribeToken,
       );
 
       return existingSubscription;
@@ -113,16 +128,18 @@ export class NotificationsService {
     await this.emailService.sendWelcomeEmailPublic(
       subscribeDto.email,
       subscribeDto.name || 'Bạn',
-      subscription.unsubscribeToken
+      subscription.unsubscribeToken,
     );
 
     return subscription;
   }
 
   async getSubscription(userId: string): Promise<EmailSubscription[]> {
-    return this.emailSubscriptionModel.find({
-      user: new Types.ObjectId(userId),
-    }).exec();
+    return this.emailSubscriptionModel
+      .find({
+        user: new Types.ObjectId(userId),
+      })
+      .exec();
   }
 
   async updateSubscription(
@@ -165,16 +182,20 @@ export class NotificationsService {
     let failed = 0;
 
     // Lấy tất cả đăng ký email active với taskReminders = true
-    const subscriptions = await this.emailSubscriptionModel.find({
-      isActive: true,
-      taskReminders: true,
-    }).populate('user');
+    const subscriptions = await this.emailSubscriptionModel
+      .find({
+        isActive: true,
+        taskReminders: true,
+      })
+      .populate('user');
 
     for (const subscription of subscriptions) {
       try {
         // Tính thời gian nhắc nhở
         const reminderTime = new Date();
-        reminderTime.setHours(reminderTime.getHours() + subscription.reminderHours);
+        reminderTime.setHours(
+          reminderTime.getHours() + subscription.reminderHours,
+        );
 
         // Lấy các task sắp hết hạn của user
         const tasks = await this.tasksService.findTasksDueSoon(
@@ -204,7 +225,10 @@ export class NotificationsService {
           }
         }
       } catch (error) {
-        console.error(`Failed to send reminder to ${subscription.email}:`, error);
+        console.error(
+          `Failed to send reminder to ${subscription.email}:`,
+          error,
+        );
         failed++;
       }
     }
@@ -212,7 +236,10 @@ export class NotificationsService {
     return { sent, failed };
   }
 
-  async deleteSubscription(userId: string, subscriptionId: string): Promise<{ message: string }> {
+  async deleteSubscription(
+    userId: string,
+    subscriptionId: string,
+  ): Promise<{ message: string }> {
     const result = await this.emailSubscriptionModel.deleteOne({
       _id: new Types.ObjectId(subscriptionId),
       user: new Types.ObjectId(userId),

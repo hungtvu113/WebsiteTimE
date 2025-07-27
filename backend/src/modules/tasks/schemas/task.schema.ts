@@ -84,10 +84,10 @@ export const TaskSchema = SchemaFactory.createForClass(Task);
 
 // Transform _id thành id khi serialize
 TaskSchema.set('toJSON', {
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     ret.id = ret._id;
     delete (ret as any)._id;
     delete (ret as any).__v;
     return ret;
-  }
+  },
 });

@@ -30,10 +30,10 @@ export const CategorySchema = SchemaFactory.createForClass(Category);
 
 // Transform _id thành id khi serialize
 CategorySchema.set('toJSON', {
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     ret.id = ret._id;
     delete (ret as any)._id;
     delete (ret as any).__v;
     return ret;
-  }
+  },
 });

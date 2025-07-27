@@ -5,10 +5,7 @@ import { TasksModule } from '../tasks/tasks.module';
 import { TimeBlocksModule } from '../time-blocks/time-blocks.module';
 
 @Module({
-  imports: [
-    TasksModule,
-    TimeBlocksModule,
-  ],
+  imports: [TasksModule, TimeBlocksModule],
   controllers: [CalendarController],
   providers: [CalendarService],
   exports: [CalendarService],

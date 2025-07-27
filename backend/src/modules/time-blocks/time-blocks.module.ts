@@ -6,7 +6,9 @@ import { TimeBlock, TimeBlockSchema } from './schemas/time-block.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: TimeBlock.name, schema: TimeBlockSchema }]),
+    MongooseModule.forFeature([
+      { name: TimeBlock.name, schema: TimeBlockSchema },
+    ]),
   ],
   controllers: [TimeBlocksController],
   providers: [TimeBlocksService],

@@ -9,7 +9,7 @@ import { ChatHistory, ChatHistorySchema } from './schemas/chat-history.schema';
   imports: [
     ConfigModule,
     MongooseModule.forFeature([
-      { name: ChatHistory.name, schema: ChatHistorySchema }
+      { name: ChatHistory.name, schema: ChatHistorySchema },
     ]),
   ],
   controllers: [AIController],

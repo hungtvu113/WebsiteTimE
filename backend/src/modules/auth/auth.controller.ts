@@ -5,7 +5,12 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { UserDocument } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Xác thực')
 @Controller('api/auth')
@@ -24,7 +29,10 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
-  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không chính xác' })
+  @ApiResponse({
+    status: 401,
+    description: 'Thông tin đăng nhập không chính xác',
+  })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }

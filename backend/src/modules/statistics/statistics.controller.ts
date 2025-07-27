@@ -4,7 +4,13 @@ import { StatisticsQueryDto } from './dto/statistics-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { UserDocument } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('Thống kê')
 @Controller('api/statistics')
@@ -17,8 +23,16 @@ export class StatisticsController {
   @ApiOperation({ summary: 'Lấy thống kê về công việc' })
   @ApiResponse({ status: 200, description: 'Thành công' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Ngày bắt đầu (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Ngày kết thúc (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Ngày bắt đầu (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Ngày kết thúc (YYYY-MM-DD)',
+  })
   async getTasksStatistics(
     @GetUser() user: UserDocument,
     @Query() query: StatisticsQueryDto,
@@ -34,8 +48,16 @@ export class StatisticsController {
   @ApiOperation({ summary: 'Lấy thống kê về khối thời gian' })
   @ApiResponse({ status: 200, description: 'Thành công' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Ngày bắt đầu (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Ngày kết thúc (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Ngày bắt đầu (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Ngày kết thúc (YYYY-MM-DD)',
+  })
   async getTimeBlocksStatistics(
     @GetUser() user: UserDocument,
     @Query() query: StatisticsQueryDto,
@@ -51,8 +73,16 @@ export class StatisticsController {
   @ApiOperation({ summary: 'Lấy thống kê về năng suất' })
   @ApiResponse({ status: 200, description: 'Thành công' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Ngày bắt đầu (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Ngày kết thúc (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Ngày bắt đầu (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Ngày kết thúc (YYYY-MM-DD)',
+  })
   async getProductivityStatistics(
     @GetUser() user: UserDocument,
     @Query() query: StatisticsQueryDto,

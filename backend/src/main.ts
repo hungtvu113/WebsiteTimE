@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -22,7 +25,7 @@ async function bootstrap() {
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://frontend:3000', // Cho phép từ Docker container
-        process.env.FRONTEND_URL || 'http://localhost:3000'
+        process.env.FRONTEND_URL || 'http://localhost:3000',
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -34,11 +37,13 @@ async function bootstrap() {
     console.log('Đã cấu hình CORS');
 
     // Cấu hình global validation pipe
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
 
     console.log('Đã cấu hình validation pipe');
 

@@ -1,9 +1,18 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ChatMessageDto {
-  @ApiProperty({ description: 'Vai trò của tin nhắn', enum: ['user', 'assistant'] })
+  @ApiProperty({
+    description: 'Vai trò của tin nhắn',
+    enum: ['user', 'assistant'],
+  })
   @IsString()
   @IsNotEmpty()
   role: 'user' | 'assistant';
@@ -24,10 +33,10 @@ export class ChatRequestDto {
   @IsNotEmpty()
   message: string;
 
-  @ApiProperty({ 
-    description: 'Lịch sử chat (tùy chọn)', 
+  @ApiProperty({
+    description: 'Lịch sử chat (tùy chọn)',
     type: [ChatMessageDto],
-    required: false 
+    required: false,
   })
   @IsOptional()
   @IsArray()

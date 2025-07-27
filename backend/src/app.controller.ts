@@ -22,7 +22,7 @@ export class AppController {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      message: 'QLTime Backend đang hoạt động bình thường'
+      message: 'QLTime Backend đang hoạt động bình thường',
     };
   }
 }

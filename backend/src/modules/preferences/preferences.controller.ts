@@ -4,7 +4,12 @@ import { UpdatePreferenceDto } from './dto/update-preference.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { UserDocument } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Tùy chọn người dùng')
 @Controller('api/preferences')
@@ -30,7 +35,10 @@ export class PreferencesController {
     @GetUser() user: UserDocument,
     @Body() updatePreferenceDto: UpdatePreferenceDto,
   ) {
-    return this.preferencesService.updatePreferences(user._id.toString(), updatePreferenceDto);
+    return this.preferencesService.updatePreferences(
+      user._id.toString(),
+      updatePreferenceDto,
+    );
   }
 
   @Patch()
@@ -42,6 +50,9 @@ export class PreferencesController {
     @GetUser() user: UserDocument,
     @Body() updatePreferenceDto: UpdatePreferenceDto,
   ) {
-    return this.preferencesService.updatePreferences(user._id.toString(), updatePreferenceDto);
+    return this.preferencesService.updatePreferences(
+      user._id.toString(),
+      updatePreferenceDto,
+    );
   }
 }

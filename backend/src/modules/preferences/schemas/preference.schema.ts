@@ -6,7 +6,8 @@ export type ThemeType = 'light' | 'dark' | 'system';
 export type CalendarViewType = 'day' | 'week' | 'month';
 export type StartOfWeekType = 0 | 1 | 6; // 0: Sunday, 1: Monday, 6: Saturday
 
-export type PreferenceDocument = Preference & Document & { _id: Types.ObjectId };
+export type PreferenceDocument = Preference &
+  Document & { _id: Types.ObjectId };
 
 @Schema({ timestamps: true })
 export class Preference {
@@ -14,7 +15,12 @@ export class Preference {
     description: 'Người dùng sở hữu',
     example: '60d21b4667d0d8992e610c85',
   })
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, unique: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+  })
   user: MongooseSchema.Types.ObjectId;
 
   @ApiProperty({

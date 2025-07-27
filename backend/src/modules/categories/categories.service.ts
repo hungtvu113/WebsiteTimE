@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Category } from './schemas/category.schema';
@@ -11,7 +16,10 @@ export class CategoriesService {
     @InjectModel(Category.name) private categoryModel: Model<Category>,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto, userId: string): Promise<Category> {
+  async create(
+    createCategoryDto: CreateCategoryDto,
+    userId: string,
+  ): Promise<Category> {
     const newCategory = new this.categoryModel({
       ...createCategoryDto,
       user: userId,
@@ -20,10 +28,7 @@ export class CategoriesService {
   }
 
   async findAll(userId: string): Promise<Category[]> {
-    return this.categoryModel
-      .find({ user: userId })
-      .sort({ name: 1 })
-      .exec();
+    return this.categoryModel.find({ user: userId }).sort({ name: 1 }).exec();
   }
 
   async findById(id: string, userId: string): Promise<Category> {
@@ -46,7 +51,11 @@ export class CategoriesService {
     return category;
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto, userId: string): Promise<Category> {
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    userId: string,
+  ): Promise<Category> {
     // Kiểm tra ID có hợp lệ không
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`ID danh mục không hợp lệ: ${id}`);

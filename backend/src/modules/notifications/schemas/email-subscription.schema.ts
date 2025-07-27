@@ -33,7 +33,8 @@ export class EmailSubscription {
   lastNotificationSent: Date; // Lần cuối gửi thông báo
 }
 
-export const EmailSubscriptionSchema = SchemaFactory.createForClass(EmailSubscription);
+export const EmailSubscriptionSchema =
+  SchemaFactory.createForClass(EmailSubscription);
 
 // Index để tìm kiếm nhanh
 EmailSubscriptionSchema.index({ email: 1 });

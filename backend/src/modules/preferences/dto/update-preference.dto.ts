@@ -1,6 +1,10 @@
 import { IsOptional, IsEnum, IsString, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ThemeType, CalendarViewType, StartOfWeekType } from '../schemas/preference.schema';
+import {
+  ThemeType,
+  CalendarViewType,
+  StartOfWeekType,
+} from '../schemas/preference.schema';
 
 export class UpdatePreferenceDto {
   @ApiPropertyOptional({
@@ -51,6 +55,8 @@ export class UpdatePreferenceDto {
     example: false,
   })
   @IsOptional()
-  @IsBoolean({ message: 'Trạng thái hiển thị công việc đã hoàn thành phải là boolean' })
+  @IsBoolean({
+    message: 'Trạng thái hiển thị công việc đã hoàn thành phải là boolean',
+  })
   showCompletedTasks?: boolean;
 }

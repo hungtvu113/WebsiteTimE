@@ -10,10 +10,18 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { NotificationsService } from './services/notifications.service';
 import { SchedulerService } from './services/scheduler.service';
-import { SubscribeEmailDto, UpdateEmailSubscriptionDto } from './dto/subscribe-email.dto';
+import {
+  SubscribeEmailDto,
+  UpdateEmailSubscriptionDto,
+} from './dto/subscribe-email.dto';
 import { PublicSubscribeEmailDto } from './dto/public-subscribe-email.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -32,12 +40,20 @@ export class NotificationsController {
   @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  async subscribeEmail(@Request() req, @Body() subscribeDto: SubscribeEmailDto) {
-    return this.notificationsService.subscribeEmail(req.user.userId, subscribeDto);
+  async subscribeEmail(
+    @Request() req,
+    @Body() subscribeDto: SubscribeEmailDto,
+  ) {
+    return this.notificationsService.subscribeEmail(
+      req.user.userId,
+      subscribeDto,
+    );
   }
 
   @Post('email/subscribe-public')
-  @ApiOperation({ summary: 'Đăng ký nhận thông báo email (không cần đăng nhập)' })
+  @ApiOperation({
+    summary: 'Đăng ký nhận thông báo email (không cần đăng nhập)',
+  })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   async subscribeEmailPublic(@Body() subscribeDto: PublicSubscribeEmailDto) {
@@ -66,7 +82,11 @@ export class NotificationsController {
     @Param('id') id: string,
     @Body() updateDto: UpdateEmailSubscriptionDto,
   ) {
-    return this.notificationsService.updateSubscription(req.user.userId, id, updateDto);
+    return this.notificationsService.updateSubscription(
+      req.user.userId,
+      id,
+      updateDto,
+    );
   }
 
   @Delete('email/subscriptions/:id')

@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsArray, IsHexColor } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsArray,
+  IsHexColor,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateNoteDto {

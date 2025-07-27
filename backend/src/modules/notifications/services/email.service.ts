@@ -44,7 +44,9 @@ export class EmailService {
       if (!this.configService.get<string>('EMAIL_USER')) {
         this.logger.log(`📧 [TEST MODE] Email would be sent to: ${options.to}`);
         this.logger.log(`📧 [TEST MODE] Subject: ${options.subject}`);
-        this.logger.log(`📧 [TEST MODE] Content: ${options.text?.substring(0, 100) || 'No content'}...`);
+        this.logger.log(
+          `📧 [TEST MODE] Content: ${options.text?.substring(0, 100) || 'No content'}...`,
+        );
         return true; // Giả lập gửi thành công
       }
 
@@ -57,7 +59,9 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email sent successfully to ${options.to}: ${result.messageId}`);
+      this.logger.log(
+        `Email sent successfully to ${options.to}: ${result.messageId}`,
+      );
       return true;
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}:`, error);
@@ -67,14 +71,16 @@ export class EmailService {
 
   async sendTaskReminderEmail(email: string, tasks: any[]): Promise<boolean> {
     const subject = `QLTime - Nhắc nhở: ${tasks.length} công việc sắp hết hạn`;
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">🔔 Nhắc nhở từ QLTime</h2>
         <p>Bạn có <strong>${tasks.length}</strong> công việc sắp hết hạn:</p>
         
         <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          ${tasks.map(task => `
+          ${tasks
+            .map(
+              (task) => `
             <div style="border-left: 4px solid #ef4444; padding: 10px; margin: 10px 0; background: white;">
               <h3 style="margin: 0; color: #1f2937;">${task.title}</h3>
               <p style="margin: 5px 0; color: #6b7280;">
@@ -82,7 +88,9 @@ export class EmailService {
               </p>
               ${task.description ? `<p style="margin: 5px 0; color: #6b7280;">${task.description}</p>` : ''}
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
         
         <p>
@@ -105,13 +113,13 @@ export class EmailService {
       to: email,
       subject,
       html,
-      text: `QLTime - Bạn có ${tasks.length} công việc sắp hết hạn. Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'}/tasks để xem chi tiết.`
+      text: `QLTime - Bạn có ${tasks.length} công việc sắp hết hạn. Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'}/tasks để xem chi tiết.`,
     });
   }
 
   async sendWelcomeEmail(email: string, name: string): Promise<boolean> {
     const subject = 'Chào mừng bạn đến với QLTime!';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">🎉 Chào mừng ${name}!</h2>
@@ -146,11 +154,15 @@ export class EmailService {
       to: email,
       subject,
       html,
-      text: `Chào mừng ${name} đến với QLTime! Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'} để bắt đầu.`
+      text: `Chào mừng ${name} đến với QLTime! Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'} để bắt đầu.`,
     });
   }
 
-  async sendWelcomeEmailPublic(email: string, name: string, unsubscribeToken: string): Promise<boolean> {
+  async sendWelcomeEmailPublic(
+    email: string,
+    name: string,
+    unsubscribeToken: string,
+  ): Promise<boolean> {
     const subject = 'Chào mừng bạn đến với QLTime - Đăng ký thành công!';
 
     const html = `
@@ -197,11 +209,16 @@ export class EmailService {
       to: email,
       subject,
       html,
-      text: `Chào mừng ${name} đến với QLTime! Bạn đã đăng ký nhận thông báo thành công. Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'} để khám phá.`
+      text: `Chào mừng ${name} đến với QLTime! Bạn đã đăng ký nhận thông báo thành công. Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'} để khám phá.`,
     });
   }
 
-  async sendTaskReminderEmailPublic(email: string, name: string, tasks: any[], unsubscribeToken: string): Promise<boolean> {
+  async sendTaskReminderEmailPublic(
+    email: string,
+    name: string,
+    tasks: any[],
+    unsubscribeToken: string,
+  ): Promise<boolean> {
     const subject = `QLTime - Nhắc nhở: ${tasks.length} công việc sắp hết hạn`;
 
     const html = `
@@ -211,13 +228,21 @@ export class EmailService {
         <p>Bạn có <strong>${tasks.length}</strong> công việc sắp hết hạn:</p>
 
         <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          ${tasks.map(task => {
-            const dueDate = new Date(task.dueDate);
-            const now = new Date();
-            const hoursLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60));
-            const urgencyColor = hoursLeft <= 4 ? '#ef4444' : hoursLeft <= 24 ? '#f59e0b' : '#10b981';
+          ${tasks
+            .map((task) => {
+              const dueDate = new Date(task.dueDate);
+              const now = new Date();
+              const hoursLeft = Math.ceil(
+                (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60),
+              );
+              const urgencyColor =
+                hoursLeft <= 4
+                  ? '#ef4444'
+                  : hoursLeft <= 24
+                    ? '#f59e0b'
+                    : '#10b981';
 
-            return `
+              return `
             <div style="border-left: 4px solid ${urgencyColor}; padding: 15px; margin: 15px 0; background: white; border-radius: 4px;">
               <h3 style="margin: 0 0 8px 0; color: #1f2937;">${task.title}</h3>
               <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">
@@ -225,11 +250,17 @@ export class EmailService {
                 ${hoursLeft > 0 ? `(còn ${hoursLeft} giờ)` : '⚠️ ĐÃ QUÁ HẠN'}
               </p>
               ${task.description ? `<p style="margin: 8px 0 0 0; color: #6b7280; font-size: 13px;">${task.description}</p>` : ''}
-              ${task.priority ? `<span style="background: ${task.priority === 'high' ? '#fecaca' : task.priority === 'medium' ? '#fed7aa' : '#d1fae5'}; color: ${task.priority === 'high' ? '#dc2626' : task.priority === 'medium' ? '#ea580c' : '#059669'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+              ${
+                task.priority
+                  ? `<span style="background: ${task.priority === 'high' ? '#fecaca' : task.priority === 'medium' ? '#fed7aa' : '#d1fae5'}; color: ${task.priority === 'high' ? '#dc2626' : task.priority === 'medium' ? '#ea580c' : '#059669'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
                 ${task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-              </span>` : ''}
+              </span>`
+                  : ''
+              }
             </div>
-          `}).join('')}
+          `;
+            })
+            .join('')}
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
@@ -265,10 +296,12 @@ Xin chào ${name},
 
 Bạn có ${tasks.length} công việc sắp hết hạn:
 
-${tasks.map(task => {
-  const dueDate = new Date(task.dueDate);
-  return `- ${task.title}\n  Hết hạn: ${dueDate.toLocaleDateString('vi-VN')} lúc ${dueDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
-}).join('\n\n')}
+${tasks
+  .map((task) => {
+    const dueDate = new Date(task.dueDate);
+    return `- ${task.title}\n  Hết hạn: ${dueDate.toLocaleDateString('vi-VN')} lúc ${dueDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+  })
+  .join('\n\n')}
 
 Truy cập ${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'}/tasks để xem chi tiết.
 
@@ -279,7 +312,7 @@ Hủy đăng ký: ${this.configService.get('FRONTEND_URL') || 'http://localhost:
       to: email,
       subject,
       html,
-      text: textContent.trim()
+      text: textContent.trim(),
     });
   }
 }

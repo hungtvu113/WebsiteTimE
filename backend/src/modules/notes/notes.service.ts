@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Note } from './schemas/note.schema';
@@ -7,9 +11,7 @@ import { UpdateNoteDto } from './dto/update-note.dto';
 
 @Injectable()
 export class NotesService {
-  constructor(
-    @InjectModel(Note.name) private noteModel: Model<Note>,
-  ) {}
+  constructor(@InjectModel(Note.name) private noteModel: Model<Note>) {}
 
   async create(createNoteDto: CreateNoteDto, userId: string): Promise<Note> {
     const newNote = new this.noteModel({
@@ -20,10 +22,7 @@ export class NotesService {
   }
 
   async findAll(userId: string): Promise<Note[]> {
-    return this.noteModel
-      .find({ user: userId })
-      .sort({ updatedAt: -1 })
-      .exec();
+    return this.noteModel.find({ user: userId }).sort({ updatedAt: -1 }).exec();
   }
 
   async findById(id: string, userId: string): Promise<Note> {
@@ -41,7 +40,11 @@ export class NotesService {
     return note;
   }
 
-  async update(id: string, updateNoteDto: UpdateNoteDto, userId: string): Promise<Note> {
+  async update(
+    id: string,
+    updateNoteDto: UpdateNoteDto,
+    userId: string,
+  ): Promise<Note> {
     // Kiểm tra quyền truy cập
     const note = await this.noteModel.findById(id);
     if (!note) {

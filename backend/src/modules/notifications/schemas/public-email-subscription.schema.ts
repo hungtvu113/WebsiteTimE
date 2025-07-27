@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type PublicEmailSubscriptionDocument = PublicEmailSubscription & Document;
+export type PublicEmailSubscriptionDocument = PublicEmailSubscription &
+  Document;
 
 @Schema({ timestamps: true })
 export class PublicEmailSubscription {
@@ -39,7 +40,9 @@ export class PublicEmailSubscription {
   verificationToken: string; // Token xác thực email
 }
 
-export const PublicEmailSubscriptionSchema = SchemaFactory.createForClass(PublicEmailSubscription);
+export const PublicEmailSubscriptionSchema = SchemaFactory.createForClass(
+  PublicEmailSubscription,
+);
 
 // Index để tìm kiếm nhanh
 PublicEmailSubscriptionSchema.index({ email: 1 });
