@@ -101,7 +101,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🔍 Lint all packages
-        run: pnpm lint
+        run: |
+          pnpm backend:lint
+          pnpm frontend:lint
 
       - name: 🧪 Run all tests
         run: |

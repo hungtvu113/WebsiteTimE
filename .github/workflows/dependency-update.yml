@@ -176,7 +176,8 @@ jobs:
           pnpm install
           
           # Run linting
-          pnpm lint || echo "⚠️ Linting failed, will be noted in PR"
+          pnpm backend:lint || echo "⚠️ Backend linting failed, will be noted in PR"
+          pnpm frontend:lint || echo "⚠️ Frontend linting failed, will be noted in PR"
           
           # Try to build
           pnpm build || echo "⚠️ Build failed, will be noted in PR"

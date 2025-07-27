@@ -73,7 +73,32 @@ run: pnpm backend:test --coverage
 run: pnpm --filter backend test:cov
 ```
 
-### 5. **⚡ Performance Test Optimizations**
+### 5. **📊 Fixed SonarCloud Action and Missing Token**
+
+**Problem:**
+- SonarCloud action deprecated
+- Missing SONAR_TOKEN causing failures
+
+**Solution:**
+- Updated to new `sonarqube-scan-action@v5.0.0`
+- Added conditional execution when SONAR_TOKEN is available
+- Added helpful skip message when token is missing
+
+**Files Changed:**
+- `.github/workflows/code-quality.yml`
+- `.github/SONARCLOUD-SETUP.md` (new guide)
+
+### 6. **🔍 Fixed Lint Commands**
+
+**Problem:** `pnpm backend:lint` command not found
+
+**Solution:** Added missing lint scripts to root package.json
+
+**Files Changed:**
+- `package.json` (added backend:lint and frontend:lint)
+- All workflow files updated to use correct commands
+
+### 7. **⚡ Performance Test Optimizations**
 
 **Changes:**
 - Reduced test duration for faster CI runs
