@@ -72,7 +72,7 @@ jobs:
 
       - name: 📊 SonarCloud Quality Gate
         if: ${{ secrets.SONAR_TOKEN != '' }}
-        uses: sonarqube-quality-gate-action@master
+        uses: SonarSource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
