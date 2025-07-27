@@ -20,7 +20,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8'
+  PNPM_VERSION: '8.15.0'
   REGISTRY: docker.io
   BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-backend
   FRONTEND_IMAGE_NAME: ${{ github.repository_owner }}/websitetime-frontend

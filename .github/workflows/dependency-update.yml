@@ -24,7 +24,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8'
+  PNPM_VERSION: '8.15.0'
 
 jobs:
   # 🔍 Check for Updates
