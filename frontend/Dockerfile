@@ -5,8 +5,8 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Cài đặt dependencies
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Sao chép source code
 COPY . .

@@ -4,11 +4,11 @@ FROM node:18-alpine AS builder
 # Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Sao chép package.json và package-lock.json
-COPY package*.json ./
+# Sao chép package.json
+COPY package.json ./
 
 # Cài đặt tất cả dependencies (bao gồm devDependencies để build)
-RUN npm ci
+RUN npm install
 
 # Sao chép source code
 COPY . .
@@ -22,17 +22,14 @@ FROM node:18-alpine AS production
 # Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Sao chép package.json và package-lock.json
-COPY package*.json ./
+# Sao chép package.json
+COPY package.json ./
 
 # Cài đặt chỉ production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Sao chép built application từ builder stage
 COPY --from=builder /app/dist ./dist
-
-# Sao chép các files cần thiết khác
-COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port
 EXPOSE 3001
